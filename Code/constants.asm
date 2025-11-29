@@ -178,8 +178,8 @@ DIS : dw 0
 %define TIMER_BORDER_COLOR  [dark_orange]
 %define TIMER_TEXT_X        TIMER_PANEL_X + 4 * PADDING
 %define TIMER_TEXT_Y        ((TIMER_PANEL_Y + TIMER_PANEL_HEIGHT) / 2) - PADDING
-%define TIMER_VALUE_X       TIMER_PANEL_X 
-%define TIMER_VALUE_Y       ((TIMER_PANEL_Y + TIMER_PANEL_HEIGHT) / 2)
+%define TIMER_VALUE_X       TIMER_PANEL_X + 50
+%define TIMER_VALUE_Y       TIMER_PANEL_Y + 6
 
 ; === SOUND BUTTON ===
 %define SOUND_BTN_RADIUS    BASE_RADIUS
@@ -208,14 +208,12 @@ DIS : dw 0
 ; DATA SECTION
 ; ------------------------------------------------------------
 
-current_score       dw 80
-current_minutes     db 12
-current_seconds     db 47
+current_score       dw 1234
 sound_enabled       db 1
 game_paused         db 0
 
-score_label         db "SCORE:120", 0
-timer_label         db "TIME:12:33", 0
+score_label         db "SCORE: ", 0
+timer_label         db "TIME: ", 0
 
 temp_color  db 0    ; Temporary storage for circle fill color
 
@@ -243,6 +241,7 @@ temp_color  db 0    ; Temporary storage for circle fill color
 %define STATE_PAUSE         2
 %define STATE_GAMEOVER      3
 %define STATE_EXIT          4
+%define STATE_HELP          5
 
 ; Global variables
 current_selection   db 0        ; Currently selected menu option (0-2)

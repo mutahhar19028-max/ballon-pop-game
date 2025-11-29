@@ -2,8 +2,6 @@
 ; show_bg.asm — Draws VGA 320x200x256 background with palette
 ; ============================================================
 
-; No ORG / BITS — This is a callable module
-
 %define MODE_VGA13H  0x0013
 %define VIDEO_SEG    0xA000
 %define SCREEN_SIZE  64000
@@ -12,6 +10,7 @@
 ; ------------------------------------------------------------
 ; PUBLIC: showBackground320x200
 ; Loads and displays final.raw using vga.bin palette
+; Palette is loaded only on first call.
 ; ------------------------------------------------------------
 showBackground320x200:
     push ax
@@ -23,13 +22,17 @@ showBackground320x200:
     push ds
     push es
 
-    ; --------------------------------------------------------
-    ; Load custom 256-color palette from "vga.bin"
-    ; --------------------------------------------------------
+    ; If palette not loaded yet -> load it once
+    mov al, [palette_loaded]
+    cmp al, 1
+    je .skip_palette
     call load_palette
+    mov byte [palette_loaded], 1
 
+.skip_palette:
     ; --------------------------------------------------------
     ; Load and display background image from "final.raw"
+    ; (same behavior as before)
     ; --------------------------------------------------------
     mov ax, VIDEO_SEG
     mov es, ax
@@ -86,6 +89,7 @@ showBackground320x200:
 
 ; ------------------------------------------------------------
 ; load_palette — Loads "vga.bin" and programs VGA DAC registers
+; (Unchanged from your original; called only once now)
 ; ------------------------------------------------------------
 load_palette:
     push ax
@@ -143,3 +147,6 @@ palette_filename  db "palette.bin",0
 
 buffer            times CHUNK_SIZE db 0
 palette_buffer    times 768 db 0
+
+; NEW: one-byte flag: 0 = palette not loaded yet, 1 = loaded
+palette_loaded    db 0

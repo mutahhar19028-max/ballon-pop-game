@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0", 
+    "configurations": [
+        {
+            "name": "Debug 16-bit ASM", 
+            "type": "cppdbg",
+            "request": "launch", 
+            "program": "${workspaceFolder}\\${relativeFileDirname}\\${fileBasenameNoExtension}.elf", 
+            "cwd": "${workspaceFolder}",
+            "sourceFileMap": {
+                "${workspaceFolder}\\${relativeFileDirname}": "${workspaceFolder}\\${relativeFileDirname}"
+            }, 
+            "preLaunchTask": "Assemble and Debug", 
+            "MIMode": "gdb", 
+            "miDebuggerPath": "gdb",
+            "miDebuggerServerAddress": "localhost:1111", 
+            "setupCommands": [
+                { "text": "cd ${workspaceFolder}\\${relativeFileDirname}" }, 
+                { "text": "file ${fileBasenameNoExtension}.elf" }, 
+                { "text": "cd ${workspaceFolder}" }, 
+                { "text": "directory ${fileDirname}" }, 
+                { "text": "set tdesc filename Tools\\target.xml" }, 
+                { "text": "set architecture i8086" }, 
+                { "text": "set disassembly-flavor intel" }
+            ],
+            "externalConsole": true, 
+            "stopAtEntry": true, 
+            "logging": {
+                "engineLogging": true, 
+                "trace": true, 
+                "traceResponse": true
+            },
+        }
+    ]
+}

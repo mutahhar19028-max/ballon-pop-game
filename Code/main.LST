@@ -1,0 +1,47 @@
+     1                                  [org 0x0100]
+     2                                  
+     3                                  ; ------------------------------------
+     4                                  ; Initialize values
+     5                                  ; ------------------------------------
+     6 00000000 BB89B1                  mov bx, 0B189h        ; BX = input number (we will count its 1-bits)
+     7 00000003 B8A5AB                  mov ax, 0ABA5h        ; AX = number we will transform later
+     8 00000006 B211                    mov dl, 17            ; DL = bit counter (17 steps to check all 16 bits of BX)
+     9 00000008 B600                    mov dh, 0             ; DH = counter to store number of 1’s found in BX
+    10                                  
+    11                                  ; ------------------------------------
+    12                                  ; Loop through BX bits and count 1’s
+    13                                  ; ------------------------------------
+    14                                  loop1:
+    15 0000000A 80FA00                      cmp dl, 0         ; are we done checking all bits?
+    16 0000000D 740A                        je finish         ; if yes → jump to finish stage
+    17                                  
+    18 0000000F D1DB                        rcr bx, 1         ; rotate BX right through CF → lowest bit goes into CF
+    19 00000011 FECA                        dec dl            ; decrement remaining bit counter
+    20                                  
+    21 00000013 7302                        jnc loop2         ; if CF = 0 (bit was 0), skip increment
+    22 00000015 FEC6                        inc dh            ; if CF = 1 (bit was 1), increment count of ones
+    23                                  
+    24                                  loop2:
+    25 00000017 EBF1                        jmp loop1         ; repeat until all bits checked
+    26                                  
+    27                                  ; ------------------------------------
+    28                                  ; Transform AX using the count of 1’s
+    29                                  ; ------------------------------------
+    30                                  finish:
+    31 00000019 80FE00                      cmp dh, 0         ; do we still have ones left to process?
+    32 0000001C 7405                        je complementInAX ; if none left, skip XOR step
+    33                                  
+    34 0000001E 83F001                      xor ax, 1         ; toggle lowest bit of AX
+    35 00000021 FECE                        dec dh            ; one “1” processed
+    36                                  
+    37                                  complementInAX:
+    38 00000023 D1C8                        ror ax, 1         ; rotate AX right by 1
+    39 00000025 FEC2                        inc dl            ; increment rotation counter
+    40 00000027 80FA10                      cmp dl, 16        ; did we complete 16 rotations?
+    41 0000002A 75ED                        jne finish        ; if not, repeat
+    42                                  
+    43                                  ; ------------------------------------
+    44                                  ; Exit program
+    45                                  ; ------------------------------------
+    46 0000002C B8004C                  mov ax, 0x4C00
+    47 0000002F CD21                    int 0x21

@@ -1,11 +1,2873 @@
-     1                                  [org 0x0100]
-     2                                  
-     3                                      start:
+     1                                  ; mainRunner.asm — Entrypoint for VGA 320x200 mode
+     2                                  [BITS 16]
+     3                                  [ORG 0x100]
      4                                  
-     5 00000000 B800B8                          MOV AX, 0xB800
-     6 00000003 8EC0                            MOV ES, AX
-     7                                  
-     8 00000005 26C70640014207                  MOV WORD [ES:0320], 0x0742
-     9                                  
-    10 0000000C B8004C                      MOV AX, 0x4C00
-    11 0000000F CD21                        INT 0x21
+     5 00000000 E9DF31                  jmp start
+     6                                  
+     7                                  %include "Code\font.asm"
+     1                              <1> %define FONT_SEG  0xF000
+     2                              <1> %define FONT_OFF  0xFA6E    ; <-- 8×8 BIOS font base
+     8                                  %include "Code\colors.asm"
+     1 00000003 00                  <1> char_color : db 0
+     2                              <1> 
+     3 00000004 00                  <1> white : db 0
+     4                              <1> 
+     5 00000005 1A                  <1> bright_yellow: db 26
+     6 00000006 16                  <1> dull_yellow : db 22
+     7                              <1> 
+     8 00000007 1C                  <1> light_orange : db 28
+     9 00000008 37                  <1> dark_orange : db 55
+    10                              <1> 
+    11 00000009 2F                  <1> light_brown : db 47
+    12                              <1> 
+    13 0000000A 1F                  <1> bright_cyan : db 31
+    14 0000000B 2D                  <1> dull_cyan : db 45
+    15 0000000C 3F                  <1> bold_leaves_green : db 63
+    16                              <1> 
+    17 0000000D 48                  <1> baby_light_light_blue : db 72
+    18 0000000E 04                  <1> light_light_blue: db 4 ; 4-6
+    19 0000000F 47                  <1> light_blue : db 71
+    20                              <1> 
+    21 00000010 FF                  <1> nature_dark_green : db 255
+    22                              <1> 
+    23 00000011 FD                  <1> dark_brown : db 253
+    24                              <1> 
+    25 00000012 FC                  <1> violet : db 252
+    26                              <1> 
+    27 00000013 F8                  <1> grey : db 248
+     9                                  %include "Code\ui.asm"
+     1                              <1> %define SCREEN_WIDTH    320
+     2                              <1> %define SCREEN_HEIGHT   200
+     3                              <1> %define VGA_SEGMENT     0xA000
+     4                              <1> 
+     5                              <1> ; ------------------------------------------------------------
+     6                              <1> ; drawRoundedRect
+     7                              <1> ; ------------------------------------------------------------
+     8                              <1> ; INPUT:
+     9                              <1> ;   AX = X coordinate (top-left)
+    10                              <1> ;   BX = Y coordinate (top-left)
+    11                              <1> ;   CX = Width in pixels
+    12                              <1> ;   DX = Height in pixels
+    13                              <1> ;   SI = Fill color
+    14                              <1> ;   DI = Border color
+    15                              <1> ; OUTPUT:
+    16                              <1> ;   Rounded rectangle with 2-pixel corner radius
+    17                              <1> ; EFFECT:
+    18                              <1> ;   Draws main body as filled rect (offset by 2 pixels)
+    19                              <1> ;   Draws top/bottom strips for rounded edges
+    20                              <1> ;   Draws border outline using drawRectOutline
+    21                              <1> ;   Creates visual effect of rounded corners by omitting corner pixels
+    22                              <1> ; ------------------------------------------------------------
+    23                              <1> drawRoundedRect:
+    24 00000014 50                  <1>     push ax
+    25 00000015 53                  <1>     push bx
+    26 00000016 51                  <1>     push cx
+    27 00000017 52                  <1>     push dx
+    28 00000018 56                  <1>     push si
+    29 00000019 57                  <1>     push di
+    30 0000001A 55                  <1>     push bp
+    31                              <1> 
+    32 0000001B 89E5                <1>     mov bp, sp
+    33 0000001D 83EC0A              <1>     sub sp, 10
+    34 00000020 8946FE              <1>     mov word [bp-2], ax
+    35 00000023 895EFC              <1>     mov word [bp-4], bx
+    36 00000026 894EFA              <1>     mov word [bp-6], cx
+    37 00000029 8956F8              <1>     mov word [bp-8], dx
+    38 0000002C 8976F6              <1>     mov word [bp-10], si
+    39                              <1> 
+    40 0000002F 8B46FE              <1>     mov ax, [bp-2]
+    41 00000032 8B5EFC              <1>     mov bx, [bp-4]
+    42 00000035 83C302              <1>     add bx, 2
+    43 00000038 8B4EFA              <1>     mov cx, [bp-6]
+    44 0000003B 8B56F8              <1>     mov dx, [bp-8]
+    45 0000003E 83EA04              <1>     sub dx, 4
+    46 00000041 8B76F6              <1>     mov si, [bp-10]
+    47 00000044 E85200              <1>     call drawFilledRect
+    48                              <1> 
+    49 00000047 8B46FE              <1>     mov ax, [bp-2]
+    50 0000004A 83C002              <1>     add ax, 2
+    51 0000004D 8B5EFC              <1>     mov bx, [bp-4]
+    52 00000050 8B4EFA              <1>     mov cx, [bp-6]
+    53 00000053 83E904              <1>     sub cx, 4
+    54 00000056 BA0200              <1>     mov dx, 2
+    55 00000059 8B76F6              <1>     mov si, [bp-10]
+    56 0000005C E83A00              <1>     call drawFilledRect
+    57                              <1> 
+    58 0000005F 8B46FE              <1>     mov ax, [bp-2]
+    59 00000062 83C002              <1>     add ax, 2
+    60 00000065 8B5EFC              <1>     mov bx, [bp-4]
+    61 00000068 035EF8              <1>     add bx, [bp-8]
+    62 0000006B 83EB02              <1>     sub bx, 2
+    63 0000006E 8B4EFA              <1>     mov cx, [bp-6]
+    64 00000071 83E904              <1>     sub cx, 4
+    65 00000074 BA0200              <1>     mov dx, 2
+    66 00000077 8B76F6              <1>     mov si, [bp-10]
+    67 0000007A E81C00              <1>     call drawFilledRect
+    68                              <1> 
+    69 0000007D 8B46FE              <1>     mov ax, [bp-2]
+    70 00000080 8B5EFC              <1>     mov bx, [bp-4]
+    71 00000083 8B4EFA              <1>     mov cx, [bp-6]
+    72 00000086 8B56F8              <1>     mov dx, [bp-8]
+    73 00000089 89FE                <1>     mov si, di
+    74 0000008B E84B00              <1>     call drawRectOutline
+    75                              <1> 
+    76 0000008E 83C40A              <1>     add sp, 10
+    77 00000091 5D                  <1>     pop bp
+    78 00000092 5F                  <1>     pop di
+    79 00000093 5E                  <1>     pop si
+    80 00000094 5A                  <1>     pop dx
+    81 00000095 59                  <1>     pop cx
+    82 00000096 5B                  <1>     pop bx
+    83 00000097 58                  <1>     pop ax
+    84 00000098 C3                  <1>     ret
+    85                              <1> 
+    86                              <1> ; ------------------------------------------------------------
+    87                              <1> ; drawFilledRect
+    88                              <1> ; ------------------------------------------------------------
+    89                              <1> ; INPUT:
+    90                              <1> ;   AX = X coordinate (top-left)
+    91                              <1> ;   BX = Y coordinate (top-left)
+    92                              <1> ;   CX = Width in pixels
+    93                              <1> ;   DX = Height in pixels
+    94                              <1> ;   SI = Color value
+    95                              <1> ; OUTPUT:
+    96                              <1> ;   Solid filled rectangle
+    97                              <1> ; EFFECT:
+    98                              <1> ;   Draws DX rows, each CX pixels wide
+    99                              <1> ;   Calculates offset for each row: (Y*320 + X)
+   100                              <1> ;   Fills each row left to right with specified color
+   101                              <1> ; ------------------------------------------------------------
+   102                              <1> drawFilledRect:
+   103 00000099 50                  <1>     push ax
+   104 0000009A 53                  <1>     push bx
+   105 0000009B 51                  <1>     push cx
+   106 0000009C 52                  <1>     push dx
+   107 0000009D 57                  <1>     push di
+   108 0000009E 06                  <1>     push es
+   109 0000009F 55                  <1>     push bp
+   110                              <1> 
+   111 000000A0 3D4001              <1>     cmp ax, 320
+   112 000000A3 732C                <1>     jae .done
+   113 000000A5 81FBC800            <1>     cmp bx, 200
+   114 000000A9 7326                <1>     jae .done
+   115                              <1> 
+   116 000000AB BD00A0              <1>     mov bp, VGA_SEGMENT
+   117 000000AE 8EC5                <1>     mov es, bp
+   118                              <1> 
+   119 000000B0 89D5                <1>     mov bp, dx
+   120                              <1> 
+   121                              <1> .row_loop:
+   122 000000B2 51                  <1>     push cx
+   123 000000B3 50                  <1>     push ax
+   124                              <1>     
+   125 000000B4 89DF                <1>     mov di, bx
+   126 000000B6 52                  <1>     push dx
+   127 000000B7 BA4001              <1>     mov dx, 320
+   128 000000BA 50                  <1>     push ax
+   129 000000BB 89F8                <1>     mov ax, di
+   130 000000BD F7E2                <1>     mul dx
+   131 000000BF 89C7                <1>     mov di, ax
+   132 000000C1 58                  <1>     pop ax
+   133 000000C2 5A                  <1>     pop dx
+   134 000000C3 01C7                <1>     add di, ax
+   135                              <1> 
+   136                              <1> .col_loop:
+   137 000000C5 268935              <1>     mov [es:di], si
+   138 000000C8 47                  <1>     inc di
+   139 000000C9 E2FA                <1>     loop .col_loop
+   140                              <1>     
+   141 000000CB 58                  <1>     pop ax
+   142 000000CC 59                  <1>     pop cx
+   143 000000CD 43                  <1>     inc bx
+   144 000000CE 4D                  <1>     dec bp
+   145 000000CF 75E1                <1>     jnz .row_loop
+   146                              <1> 
+   147                              <1> .done:
+   148 000000D1 5D                  <1>     pop bp
+   149 000000D2 07                  <1>     pop es
+   150 000000D3 5F                  <1>     pop di
+   151 000000D4 5A                  <1>     pop dx
+   152 000000D5 59                  <1>     pop cx
+   153 000000D6 5B                  <1>     pop bx
+   154 000000D7 58                  <1>     pop ax
+   155 000000D8 C3                  <1>     ret
+   156                              <1> 
+   157                              <1> ; ------------------------------------------------------------
+   158                              <1> ; drawRectOutline
+   159                              <1> ; ------------------------------------------------------------
+   160                              <1> ; INPUT:
+   161                              <1> ;   AX = X coordinate (top-left)
+   162                              <1> ;   BX = Y coordinate (top-left)
+   163                              <1> ;   CX = Width in pixels
+   164                              <1> ;   DX = Height in pixels
+   165                              <1> ;   SI = Color value for border
+   166                              <1> ; OUTPUT:
+   167                              <1> ;   Hollow rectangle (4 border lines only)
+   168                              <1> ; EFFECT:
+   169                              <1> ;   Draws top horizontal line at (X, Y)
+   170                              <1> ;   Draws bottom horizontal line at (X, Y+Height-1)
+   171                              <1> ;   Draws left vertical line at (X, Y)
+   172                              <1> ;   Draws right vertical line at (X+Width-1, Y)
+   173                              <1> ;   Interior remains unchanged
+   174                              <1> ; ------------------------------------------------------------
+   175                              <1> drawRectOutline:
+   176 000000D9 50                  <1>     push ax
+   177 000000DA 53                  <1>     push bx
+   178 000000DB 51                  <1>     push cx
+   179 000000DC 52                  <1>     push dx
+   180 000000DD 57                  <1>     push di
+   181 000000DE 55                  <1>     push bp
+   182                              <1> 
+   183 000000DF 89E5                <1>     mov bp, sp
+   184 000000E1 83EC08              <1>     sub sp, 8
+   185 000000E4 8946FE              <1>     mov [bp-2], ax
+   186 000000E7 895EFC              <1>     mov [bp-4], bx
+   187 000000EA 894EFA              <1>     mov [bp-6], cx
+   188 000000ED 8956F8              <1>     mov [bp-8], dx
+   189                              <1> 
+   190 000000F0 8B46FE              <1>     mov ax, [bp-2]
+   191 000000F3 8B5EFC              <1>     mov bx, [bp-4]
+   192 000000F6 8B4EFA              <1>     mov cx, [bp-6]
+   193 000000F9 E83600              <1>     call drawHorizontalLine
+   194                              <1> 
+   195 000000FC 8B46FE              <1>     mov ax, [bp-2]
+   196 000000FF 8B5EFC              <1>     mov bx, [bp-4]
+   197 00000102 035EF8              <1>     add bx, [bp-8]
+   198 00000105 4B                  <1>     dec bx
+   199 00000106 8B4EFA              <1>     mov cx, [bp-6]
+   200 00000109 E82600              <1>     call drawHorizontalLine
+   201                              <1> 
+   202 0000010C 8B46FE              <1>     mov ax, [bp-2]
+   203 0000010F 8B5EFC              <1>     mov bx, [bp-4]
+   204 00000112 8B56F8              <1>     mov dx, [bp-8]
+   205 00000115 E85200              <1>     call drawVerticalLine
+   206                              <1> 
+   207 00000118 8B46FE              <1>     mov ax, [bp-2]
+   208 0000011B 0346FA              <1>     add ax, [bp-6]
+   209 0000011E 48                  <1>     dec ax
+   210 0000011F 8B5EFC              <1>     mov bx, [bp-4]
+   211 00000122 8B56F8              <1>     mov dx, [bp-8]
+   212 00000125 E84200              <1>     call drawVerticalLine
+   213                              <1> 
+   214 00000128 83C408              <1>     add sp, 8
+   215 0000012B 5D                  <1>     pop bp
+   216 0000012C 5F                  <1>     pop di
+   217 0000012D 5A                  <1>     pop dx
+   218 0000012E 59                  <1>     pop cx
+   219 0000012F 5B                  <1>     pop bx
+   220 00000130 58                  <1>     pop ax
+   221 00000131 C3                  <1>     ret
+   222                              <1> 
+   223                              <1> 
+   224                              <1> ; ------------------------------------------------------------
+   225                              <1> ; drawHorizontalLine
+   226                              <1> ; ------------------------------------------------------------
+   227                              <1> ; INPUT:
+   228                              <1> ;   AX = Starting X coordinate
+   229                              <1> ;   BX = Y coordinate
+   230                              <1> ;   CX = Length in pixels
+   231                              <1> ;   SI = Color value
+   232                              <1> ; OUTPUT:
+   233                              <1> ;   Horizontal line drawn from (X,Y) extending CX pixels right
+   234                              <1> ; EFFECT:
+   235                              <1> ;   Calculates starting offset (Y*320 + X)
+   236                              <1> ;   Writes color value CX times sequentially
+   237                              <1> ;   Performs basic bounds checking
+   238                              <1> ; ------------------------------------------------------------
+   239                              <1> drawHorizontalLine:
+   240 00000132 50                  <1>     push ax
+   241 00000133 53                  <1>     push bx
+   242 00000134 51                  <1>     push cx
+   243 00000135 57                  <1>     push di
+   244 00000136 06                  <1>     push es
+   245 00000137 52                  <1>     push dx
+   246                              <1> 
+   247 00000138 81FBC800            <1>     cmp bx, 200
+   248 0000013C 7325                <1>     jae .done
+   249 0000013E 3D4001              <1>     cmp ax, 320
+   250 00000141 7320                <1>     jae .done
+   251                              <1> 
+   252 00000143 BF00A0              <1>     mov di, 0xA000
+   253 00000146 8EC7                <1>     mov es, di
+   254                              <1> 
+   255 00000148 89DF                <1>     mov di, bx
+   256 0000014A BA4001              <1>     mov dx, 320
+   257 0000014D 50                  <1>     push ax
+   258 0000014E 89F8                <1>     mov ax, di
+   259 00000150 F7E2                <1>     mul dx
+   260 00000152 89C7                <1>     mov di, ax
+   261 00000154 58                  <1>     pop ax
+   262 00000155 01C7                <1>     add di, ax
+   263                              <1> 
+   264                              <1> .draw_loop:
+   265 00000157 81FF00FA            <1>     cmp di, 64000
+   266 0000015B 7306                <1>     jae .done
+   267 0000015D 268935              <1>     mov [es:di], si
+   268 00000160 47                  <1>     inc di
+   269 00000161 E2F4                <1>     loop .draw_loop
+   270                              <1> 
+   271                              <1> .done:
+   272 00000163 5A                  <1>     pop dx
+   273 00000164 07                  <1>     pop es
+   274 00000165 5F                  <1>     pop di
+   275 00000166 59                  <1>     pop cx
+   276 00000167 5B                  <1>     pop bx
+   277 00000168 58                  <1>     pop ax
+   278 00000169 C3                  <1>     ret
+   279                              <1> 
+   280                              <1> ; ------------------------------------------------------------
+   281                              <1> ; drawVerticalLine
+   282                              <1> ; ------------------------------------------------------------
+   283                              <1> ; INPUT:
+   284                              <1> ;   AX = X coordinate
+   285                              <1> ;   BX = Starting Y coordinate
+   286                              <1> ;   DX = Length in pixels (height)
+   287                              <1> ;   SI = Color value
+   288                              <1> ; OUTPUT:
+   289                              <1> ;   Vertical line drawn from (X,Y) extending DX pixels down
+   290                              <1> ; EFFECT:
+   291                              <1> ;   Recalculates offset for each row (Y*320 + X)
+   292                              <1> ;   Writes one pixel per row, incrementing Y
+   293                              <1> ;   Loops DX times downward
+   294                              <1> ; ------------------------------------------------------------
+   295                              <1> drawVerticalLine:
+   296 0000016A 50                  <1>     push ax
+   297 0000016B 53                  <1>     push bx
+   298 0000016C 52                  <1>     push dx
+   299 0000016D 57                  <1>     push di
+   300 0000016E 06                  <1>     push es
+   301                              <1> 
+   302 0000016F 3D4001              <1>     cmp ax, 320
+   303 00000172 7323                <1>     jae .done
+   304 00000174 81FBC800            <1>     cmp bx, 200
+   305 00000178 731D                <1>     jae .done
+   306                              <1> 
+   307 0000017A BF00A0              <1>     mov di, 0xA000
+   308 0000017D 8EC7                <1>     mov es, di
+   309                              <1> 
+   310                              <1> .draw_loop:
+   311 0000017F 52                  <1>     push dx
+   312 00000180 89DF                <1>     mov di, bx
+   313 00000182 BA4001              <1>     mov dx, 320
+   314 00000185 50                  <1>     push ax
+   315 00000186 89F8                <1>     mov ax, di
+   316 00000188 F7E2                <1>     mul dx
+   317 0000018A 89C7                <1>     mov di, ax
+   318 0000018C 58                  <1>     pop ax
+   319 0000018D 5A                  <1>     pop dx
+   320 0000018E 01C7                <1>     add di, ax
+   321                              <1>     
+   322 00000190 268935              <1>     mov [es:di], si
+   323 00000193 43                  <1>     inc bx
+   324 00000194 4A                  <1>     dec dx
+   325 00000195 75E8                <1>     jnz .draw_loop
+   326                              <1> 
+   327                              <1> .done:
+   328 00000197 07                  <1>     pop es
+   329 00000198 5F                  <1>     pop di
+   330 00000199 5A                  <1>     pop dx
+   331 0000019A 5B                  <1>     pop bx
+   332 0000019B 58                  <1>     pop ax
+   333 0000019C C3                  <1>     ret
+   334                              <1> 
+   335                              <1> ; ------------------------------------------------------------
+   336                              <1> ; clearScreen
+   337                              <1> ; ------------------------------------------------------------
+   338                              <1> ; INPUT:
+   339                              <1> ;   [char_color] = Color value to fill screen (0-255)
+   340                              <1> ; OUTPUT:
+   341                              <1> ;   Entire screen filled with specified color
+   342                              <1> ; EFFECT:
+   343                              <1> ;   Uses REP STOSB to efficiently write 64000 bytes
+   344                              <1> ;   Sets all VGA memory (0xA000:0000) to same color
+   345                              <1> ; ------------------------------------------------------------
+   346                              <1> clearScreen:
+   347 0000019D 50                  <1>     push ax
+   348 0000019E 51                  <1>     push cx
+   349 0000019F 57                  <1>     push di
+   350 000001A0 06                  <1>     push es
+   351                              <1> 
+   352 000001A1 B800A0              <1>     mov ax, VGA_SEGMENT
+   353 000001A4 8EC0                <1>     mov es, ax
+   354 000001A6 31FF                <1>     xor di, di
+   355 000001A8 B900FA              <1>     mov cx, SCREEN_WIDTH * SCREEN_HEIGHT   ; 64000
+   356 000001AB 30E4                <1>     xor ah, ah
+   357 000001AD A0[0300]            <1>     mov al, [char_color]
+   358 000001B0 F3AA                <1>     rep stosb
+   359                              <1> 
+   360 000001B2 07                  <1>     pop es
+   361 000001B3 5F                  <1>     pop di
+   362 000001B4 59                  <1>     pop cx
+   363 000001B5 58                  <1>     pop ax
+   364 000001B6 C3                  <1>     ret
+   365                              <1> 
+   366                              <1> ; ------------------------------------------------------------
+   367                              <1> ; display_palette_wide
+   368                              <1> ; ------------------------------------------------------------
+   369                              <1> ; EFFECT:
+   370                              <1> ;   Prints 256 colors as wide strips (160 pixels each)
+   371                              <1> ; ------------------------------------------------------------
+   372                              <1> display_palette_wide:
+   373 000001B7 50                  <1>     push ax
+   374 000001B8 53                  <1>     push bx             ; Preserve BX for inner loop counter
+   375 000001B9 51                  <1>     push cx
+   376 000001BA 57                  <1>     push di
+   377 000001BB 06                  <1>     push es
+   378                              <1>     
+   379                              <1>     ; 1. Setup ES:DI to point to the start of VGA memory (A000:0000)
+   380 000001BC B800A0              <1>     mov ax, 0A000h      ; VGA_SEGMENT
+   381 000001BF 8EC0                <1>     mov es, ax
+   382 000001C1 31FF                <1>     xor di, di          ; DI = 0 (start of video memory)
+   383                              <1> 
+   384                              <1>     ; 2. Setup Outer Loop (256 Colors)
+   385 000001C3 B90001              <1>     mov cx, 256          ; CX = Outer loop counter (256 colors)
+   386 000001C6 B000                <1>     mov al, 0         ; AL = Color Index (starts at 0)
+   387                              <1> 
+   388                              <1> outer_color_loop:
+   389                              <1>     ; 3. Setup Inner Loop (160 Pixels)
+   390 000001C8 BB00FA              <1>     mov bx, 320*200         ; BX = Inner loop counter (160 pixels wide)
+   391                              <1> 
+   392                              <1> inner_pixel_loop:
+   393 000001CB AA                  <1>     stosb               ; Write AL (current color) to [ES:DI], then DI = DI + 1
+   394 000001CC 4B                  <1>     dec bx              ; BX = BX - 1
+   395 000001CD 75FC                <1>     jnz inner_pixel_loop; Continue inner loop until 160 pixels are written
+   396                              <1> 
+   397 000001CF 50                  <1>     push ax
+   398 000001D0 B80000              <1>     mov ax, 0
+   399 000001D3 CD16                <1>     int 16h
+   400 000001D5 58                  <1>     pop ax
+   401                              <1> 
+   402                              <1>     ; 4. Increment Color Index
+   403 000001D6 FEC0                <1>     inc al              ; AL = AL + 1 (move to the next color)
+   404                              <1> 
+   405                              <1>     ; 5. Continue Outer Loop
+   406 000001D8 E2EE                <1>     loop outer_color_loop ; Decrement CX, jump to outer_color_loop if CX != 0
+   407                              <1> 
+   408                              <1>     ; Restore registers
+   409 000001DA 07                  <1>     pop es
+   410 000001DB 5F                  <1>     pop di
+   411 000001DC 59                  <1>     pop cx
+   412 000001DD 5B                  <1>     pop bx
+   413 000001DE 58                  <1>     pop ax
+   414 000001DF C3                  <1>     ret
+   415                              <1> 
+   416                              <1> 
+   417                              <1> ; ======================================================================
+   418                              <1> ; drawText  (CX=x, DX=y, SI=ptr, BL=color, BH=scale)
+   419                              <1> ; ======================================================================
+   420                              <1> drawText:
+   421 000001E0 50                  <1>     push ax
+   422 000001E1 53                  <1>     push bx
+   423 000001E2 51                  <1>     push cx
+   424 000001E3 52                  <1>     push dx
+   425 000001E4 56                  <1>     push si
+   426 000001E5 57                  <1>     push di
+   427 000001E6 55                  <1>     push bp
+   428                              <1> 
+   429 000001E7 890E[7305]          <1>     mov [dt_x_pos], cx
+   430 000001EB 8916[7505]          <1>     mov [dt_y_pos], dx
+   431 000001EF 881E[7705]          <1>     mov [dt_color], bl
+   432 000001F3 883E[7805]          <1>     mov [dt_scale], bh
+   433                              <1> 
+   434                              <1> .next:
+   435 000001F7 AC                  <1>     lodsb
+   436 000001F8 08C0                <1>     or al, al
+   437 000001FA 7420                <1>     jz .done
+   438 000001FC 3C20                <1>     cmp al, ' '
+   439 000001FE 7405                <1>     je .space
+   440                              <1> 
+   441 00000200 56                  <1>     push si
+   442 00000201 E82000              <1>     call drawChar
+   443 00000204 5E                  <1>     pop si
+   444                              <1> 
+   445                              <1> .space:
+   446                              <1>     ; Move cursor: advance by (9 * scale) pixels (9 width for 9x16)
+   447 00000205 A0[7805]            <1>     mov al, [dt_scale]
+   448 00000208 30E4                <1>     xor ah, ah
+   449 0000020A B109                <1>     mov cl, 9
+   450 0000020C F6E1                <1>     mul cl
+   451 0000020E 0106[7305]          <1>     add [dt_x_pos], ax
+   452 00000212 8B0E[7305]          <1>     mov cx, [dt_x_pos]
+   453 00000216 8B16[7505]          <1>     mov dx, [dt_y_pos]
+   454 0000021A EBDB                <1>     jmp .next
+   455                              <1> 
+   456                              <1> .done:
+   457 0000021C 5D                  <1>     pop bp
+   458 0000021D 5F                  <1>     pop di
+   459 0000021E 5E                  <1>     pop si
+   460 0000021F 5A                  <1>     pop dx
+   461 00000220 59                  <1>     pop cx
+   462 00000221 5B                  <1>     pop bx
+   463 00000222 58                  <1>     pop ax
+   464 00000223 C3                  <1>     ret
+   465                              <1> 
+   466                              <1> ; ======================================================================
+   467                              <1> ; drawChar — draws scaled character using BIOS 8x8 font
+   468                              <1> ; Input: AL = ASCII character
+   469                              <1> ; Uses [dt_x_pos], [dt_y_pos], [dt_color], [dt_scale]
+   470                              <1> ; ======================================================================
+   471                              <1> drawChar:
+   472 00000224 50                  <1>     push ax
+   473 00000225 53                  <1>     push bx
+   474 00000226 51                  <1>     push cx
+   475 00000227 52                  <1>     push dx
+   476 00000228 56                  <1>     push si
+   477 00000229 57                  <1>     push di
+   478 0000022A 55                  <1>     push bp
+   479                              <1> 
+   480                              <1>     ; --- Compute glyph offset: 8 bytes per character ---
+   481 0000022B B400                <1>     mov ah, 0
+   482 0000022D B308                <1>     mov bl, 8
+   483 0000022F F6E3                <1>     mul bl                  ; AX = ASCII * 8 (each glyph = 8 bytes)
+   484 00000231 BE6EFA              <1>     mov si, FONT_OFF
+   485 00000234 01C6                <1>     add si, ax
+   486 00000236 B800F0              <1>     mov ax, FONT_SEG
+   487 00000239 8EC0                <1>     mov es, ax              ; ES:SI -> glyph start
+   488                              <1> 
+   489                              <1>     ; --- Save start X/Y ---
+   490 0000023B A1[7305]            <1>     mov ax, [dt_x_pos]
+   491 0000023E A3[B802]            <1>     mov [.start_x], ax
+   492 00000241 A1[7505]            <1>     mov ax, [dt_y_pos]
+   493 00000244 A3[BA02]            <1>     mov [.start_y], ax
+   494                              <1> 
+   495 00000247 BD0800              <1>     mov bp, 8               ; 8 rows per glyph
+   496                              <1> 
+   497                              <1> .row_loop:
+   498 0000024A 268A04              <1>     mov al, [es:si]         ; read next row (8 bits)
+   499 0000024D 46                  <1>     inc si
+   500                              <1> 
+   501 0000024E 8B0E[B802]          <1>     mov cx, [.start_x]      ; reset X
+   502 00000252 8B16[7505]          <1>     mov dx, [dt_y_pos]      ; current Y
+   503                              <1> 
+   504 00000256 BF0800              <1>     mov di, 8               ; 8 bits per row
+   505                              <1> 
+   506                              <1> .bit_loop:
+   507 00000259 8B16[7505]          <1>     mov dx, [dt_y_pos]
+   508 0000025D A880                <1>     test al, 0x80
+   509 0000025F 742D                <1>     jz .skip_bit
+   510                              <1> 
+   511 00000261 50                  <1>     push ax
+   512 00000262 57                  <1>     push di
+   513                              <1> 
+   514 00000263 30FF                <1>     xor bh, bh
+   515 00000265 8A1E[7805]          <1>     mov bl, [dt_scale]
+   516 00000269 891E[BE02]          <1>     mov [.scale_y_count], bx
+   517                              <1> 
+   518                              <1> .scale_y_loop:
+   519 0000026D 51                  <1>     push cx
+   520 0000026E 52                  <1>     push dx
+   521 0000026F 30FF                <1>     xor bh, bh
+   522 00000271 8A1E[7805]          <1>     mov bl, [dt_scale]
+   523 00000275 891E[BC02]          <1>     mov [.scale_x_count], bx
+   524                              <1> 
+   525                              <1> .scale_x_loop:
+   526 00000279 E84400              <1>     call putPixel
+   527 0000027C 41                  <1>     inc cx
+   528 0000027D FF0E[BC02]          <1>     dec word [.scale_x_count]
+   529 00000281 75F6                <1>     jnz .scale_x_loop
+   530                              <1> 
+   531 00000283 5A                  <1>     pop dx
+   532 00000284 59                  <1>     pop cx
+   533 00000285 42                  <1>     inc dx
+   534 00000286 FF0E[BE02]          <1>     dec word [.scale_y_count]
+   535 0000028A 75E1                <1>     jnz .scale_y_loop
+   536                              <1> 
+   537 0000028C 5F                  <1>     pop di
+   538 0000028D 58                  <1>     pop ax
+   539                              <1> 
+   540                              <1> .skip_bit:
+   541 0000028E 30FF                <1>     xor bh, bh
+   542 00000290 8A1E[7805]          <1>     mov bl, [dt_scale]
+   543 00000294 01D9                <1>     add cx, bx
+   544 00000296 D0E0                <1>     shl al, 1
+   545 00000298 4F                  <1>     dec di
+   546 00000299 75BE                <1>     jnz .bit_loop
+   547                              <1> 
+   548                              <1>     ; Advance Y
+   549 0000029B A1[7505]            <1>     mov ax, [dt_y_pos]
+   550 0000029E 8B1E[7805]          <1>     mov bx, [dt_scale]
+   551 000002A2 01D8                <1>     add ax, bx
+   552 000002A4 A3[7505]            <1>     mov [dt_y_pos], ax
+   553                              <1> 
+   554 000002A7 4D                  <1>     dec bp
+   555 000002A8 75A0                <1>     jnz .row_loop
+   556                              <1> 
+   557                              <1>     ; Restore Y
+   558 000002AA A1[BA02]            <1>     mov ax, [.start_y]
+   559 000002AD A3[7505]            <1>     mov [dt_y_pos], ax
+   560                              <1> 
+   561 000002B0 5D                  <1>     pop bp
+   562 000002B1 5F                  <1>     pop di
+   563 000002B2 5E                  <1>     pop si
+   564 000002B3 5A                  <1>     pop dx
+   565 000002B4 59                  <1>     pop cx
+   566 000002B5 5B                  <1>     pop bx
+   567 000002B6 58                  <1>     pop ax
+   568 000002B7 C3                  <1>     ret
+   569                              <1> 
+   570 000002B8 0000                <1> .start_x        dw 0
+   571 000002BA 0000                <1> .start_y        dw 0
+   572 000002BC 0000                <1> .scale_x_count  dw 0
+   573 000002BE 0000                <1> .scale_y_count  dw 0
+   574                              <1> 
+   575                              <1> ; ======================================================================
+   576                              <1> ; putPixel (VGA 320x200)
+   577                              <1> ; CX=x, DX=y, color in [dt_color]
+   578                              <1> ; ======================================================================
+   579                              <1> putPixel:
+   580 000002C0 50                  <1>     push ax
+   581 000002C1 53                  <1>     push bx
+   582 000002C2 51                  <1>     push cx
+   583 000002C3 52                  <1>     push dx
+   584 000002C4 57                  <1>     push di
+   585 000002C5 06                  <1>     push es
+   586                              <1> 
+   587                              <1>     ; bounds check (safe for 320x200)
+   588 000002C6 81F94001            <1>     cmp cx, 320
+   589 000002CA 731C                <1>     jae .done_put
+   590 000002CC 81FAC800            <1>     cmp dx, 200
+   591 000002D0 7316                <1>     jae .done_put
+   592                              <1> 
+   593                              <1>     ; offset = y*320 + x
+   594 000002D2 89D0                <1>     mov ax, dx
+   595 000002D4 BB4001              <1>     mov bx, 320
+   596 000002D7 F7E3                <1>     mul bx
+   597 000002D9 01C8                <1>     add ax, cx
+   598 000002DB 89C7                <1>     mov di, ax
+   599                              <1> 
+   600 000002DD B800A0              <1>     mov ax, 0xA000
+   601 000002E0 8EC0                <1>     mov es, ax
+   602 000002E2 A0[7705]            <1>     mov al, [dt_color]
+   603 000002E5 268805              <1>     mov [es:di], al
+   604                              <1> 
+   605                              <1> .done_put:
+   606 000002E8 07                  <1>     pop es
+   607 000002E9 5F                  <1>     pop di
+   608 000002EA 5A                  <1>     pop dx
+   609 000002EB 59                  <1>     pop cx
+   610 000002EC 5B                  <1>     pop bx
+   611 000002ED 58                  <1>     pop ax
+   612 000002EE C3                  <1>     ret
+   613                              <1> 
+   614                              <1> ; ======================================================================
+   615                              <1> ; drawSelectionArrow
+   616                              <1> ; ======================================================================
+   617                              <1> drawSelectionArrow:
+   618 000002EF 50                  <1>     push ax
+   619 000002F0 53                  <1>     push bx
+   620 000002F1 51                  <1>     push cx
+   621 000002F2 52                  <1>     push dx
+   622                              <1> 
+   623 000002F3 881E[7705]          <1>     mov [dt_color], bl
+   624 000002F7 C606[7805]01        <1>     mov byte [dt_scale], 1
+   625 000002FC 890E[7305]          <1>     mov [dt_x_pos], cx
+   626 00000300 8916[7505]          <1>     mov [dt_y_pos], dx
+   627 00000304 B03E                <1>     mov al, '>'
+   628 00000306 E81BFF              <1>     call drawChar
+   629                              <1> 
+   630 00000309 5A                  <1>     pop dx
+   631 0000030A 59                  <1>     pop cx
+   632 0000030B 5B                  <1>     pop bx
+   633 0000030C 58                  <1>     pop ax
+   634 0000030D C3                  <1>     ret
+   635                              <1> 
+   636                              <1> ; ------------------------------------------------------------
+   637                              <1> ; screenDelay
+   638                              <1> ; Small delay for smooth animation (adjust for desired FPS)
+   639                              <1> ; ------------------------------------------------------------
+   640                              <1> screenDelay:
+   641 0000030E 51                  <1>     push cx
+   642 0000030F B90010              <1>     mov cx, 0x1000
+   643                              <1> .delay_loop:
+   644 00000312 90                  <1>     nop
+   645 00000313 E2FD                <1>     loop .delay_loop
+   646 00000315 59                  <1>     pop cx
+   647 00000316 C3                  <1>     ret
+   648                              <1> 
+   649                              <1> ; ------------------------------------------------------------
+   650                              <1> ; drawCircleOutline - FIXED VERSION (8088 Compatible)
+   651                              <1> ; ------------------------------------------------------------
+   652                              <1> drawCircleOutline:
+   653 00000317 50                  <1>     push ax
+   654 00000318 53                  <1>     push bx
+   655 00000319 51                  <1>     push cx
+   656 0000031A 52                  <1>     push dx
+   657 0000031B 56                  <1>     push si
+   658 0000031C 57                  <1>     push di
+   659 0000031D 55                  <1>     push bp
+   660                              <1> 
+   661 0000031E 89E5                <1>     mov bp, sp
+   662 00000320 83EC10              <1>     sub sp, 16
+   663                              <1> 
+   664 00000323 8946FE              <1>     mov word [bp-2], ax
+   665 00000326 895EFC              <1>     mov word [bp-4], bx
+   666 00000329 894EFA              <1>     mov word [bp-6], cx
+   667 0000032C 8856F8              <1>     mov byte [bp-8], dl
+   668                              <1> 
+   669                              <1>     ; **FIX: Set dt_color once at the start**
+   670 0000032F 8816[7705]          <1>     mov [dt_color], dl
+   671                              <1> 
+   672 00000333 C746F60000          <1>     mov word [bp-10], 0
+   673 00000338 8B46FA              <1>     mov ax, [bp-6]
+   674 0000033B 8946F4              <1>     mov word [bp-12], ax
+   675                              <1> 
+   676 0000033E B80100              <1>     mov ax, 1
+   677 00000341 2B46FA              <1>     sub ax, [bp-6]
+   678 00000344 8946F2              <1>     mov word [bp-14], ax
+   679                              <1> 
+   680                              <1> .circle_outline_loop:
+   681 00000347 8B46F6              <1>     mov ax, [bp-10]
+   682 0000034A 8B5EF4              <1>     mov bx, [bp-12]
+   683                              <1> 
+   684                              <1>     ; 1: (cx + x, cy + y)
+   685 0000034D 8B4EFE              <1>     mov cx, [bp-2]
+   686 00000350 034EF6              <1>     add cx, [bp-10]
+   687 00000353 8B56FC              <1>     mov dx, [bp-4]
+   688 00000356 0356F4              <1>     add dx, [bp-12]
+   689 00000359 E864FF              <1>     call putPixel
+   690                              <1> 
+   691                              <1>     ; 2: (cx - x, cy + y)
+   692 0000035C 8B4EFE              <1>     mov cx, [bp-2]
+   693 0000035F 2B4EF6              <1>     sub cx, [bp-10]
+   694 00000362 8B56FC              <1>     mov dx, [bp-4]
+   695 00000365 0356F4              <1>     add dx, [bp-12]
+   696 00000368 E855FF              <1>     call putPixel
+   697                              <1> 
+   698                              <1>     ; 3: (cx + x, cy - y)
+   699 0000036B 8B4EFE              <1>     mov cx, [bp-2]
+   700 0000036E 034EF6              <1>     add cx, [bp-10]
+   701 00000371 8B56FC              <1>     mov dx, [bp-4]
+   702 00000374 2B56F4              <1>     sub dx, [bp-12]
+   703 00000377 E846FF              <1>     call putPixel
+   704                              <1> 
+   705                              <1>     ; 4: (cx - x, cy - y)
+   706 0000037A 8B4EFE              <1>     mov cx, [bp-2]
+   707 0000037D 2B4EF6              <1>     sub cx, [bp-10]
+   708 00000380 8B56FC              <1>     mov dx, [bp-4]
+   709 00000383 2B56F4              <1>     sub dx, [bp-12]
+   710 00000386 E837FF              <1>     call putPixel
+   711                              <1> 
+   712                              <1>     ; 5: (cx + y, cy + x)
+   713 00000389 8B4EFE              <1>     mov cx, [bp-2]
+   714 0000038C 034EF4              <1>     add cx, [bp-12]
+   715 0000038F 8B56FC              <1>     mov dx, [bp-4]
+   716 00000392 0356F6              <1>     add dx, [bp-10]
+   717 00000395 E828FF              <1>     call putPixel
+   718                              <1> 
+   719                              <1>     ; 6: (cx - y, cy + x)
+   720 00000398 8B4EFE              <1>     mov cx, [bp-2]
+   721 0000039B 2B4EF4              <1>     sub cx, [bp-12]
+   722 0000039E 8B56FC              <1>     mov dx, [bp-4]
+   723 000003A1 0356F6              <1>     add dx, [bp-10]
+   724 000003A4 E819FF              <1>     call putPixel
+   725                              <1> 
+   726                              <1>     ; 7: (cx + y, cy - x)
+   727 000003A7 8B4EFE              <1>     mov cx, [bp-2]
+   728 000003AA 034EF4              <1>     add cx, [bp-12]
+   729 000003AD 8B56FC              <1>     mov dx, [bp-4]
+   730 000003B0 2B56F6              <1>     sub dx, [bp-10]
+   731 000003B3 E80AFF              <1>     call putPixel
+   732                              <1> 
+   733                              <1>     ; 8: (cx - y, cy - x)
+   734 000003B6 8B4EFE              <1>     mov cx, [bp-2]
+   735 000003B9 2B4EF4              <1>     sub cx, [bp-12]
+   736 000003BC 8B56FC              <1>     mov dx, [bp-4]
+   737 000003BF 2B56F6              <1>     sub dx, [bp-10]
+   738 000003C2 E8FBFE              <1>     call putPixel
+   739                              <1> 
+   740 000003C5 8B46F2              <1>     mov ax, [bp-14]
+   741 000003C8 83F800              <1>     cmp ax, 0
+   742 000003CB 7C1C                <1>     jl .d_less_zero
+   743                              <1>     
+   744 000003CD 8B46F2              <1>     mov ax, [bp-14]
+   745 000003D0 8B56F6              <1>     mov dx, [bp-10]
+   746 000003D3 D1E2                <1>     shl dx, 1
+   747 000003D5 8B76F4              <1>     mov si, [bp-12]
+   748 000003D8 D1E6                <1>     shl si, 1
+   749 000003DA 29F2                <1>     sub dx, si
+   750 000003DC 01D0                <1>     add ax, dx
+   751 000003DE 83C005              <1>     add ax, 5
+   752 000003E1 8946F2              <1>     mov [bp-14], ax
+   753 000003E4 FF4EF4              <1>     dec word [bp-12]
+   754 000003E7 EB10                <1>     jmp .d_done
+   755                              <1> 
+   756                              <1> .d_less_zero:
+   757 000003E9 8B46F2              <1>     mov ax, [bp-14]
+   758 000003EC 8B56F6              <1>     mov dx, [bp-10]
+   759 000003EF D1E2                <1>     shl dx, 1
+   760 000003F1 01D0                <1>     add ax, dx
+   761 000003F3 83C003              <1>     add ax, 3
+   762 000003F6 8946F2              <1>     mov [bp-14], ax
+   763                              <1> 
+   764                              <1> .d_done:
+   765 000003F9 FF46F6              <1>     inc word [bp-10]
+   766 000003FC 8B46F6              <1>     mov ax, [bp-10]
+   767 000003FF 3B46F4              <1>     cmp ax, [bp-12]
+   768 00000402 0F8E41FF            <1>     jle .circle_outline_loop
+   769                              <1> 
+   770 00000406 83C410              <1>     add sp, 16
+   771 00000409 5D                  <1>     pop bp
+   772 0000040A 5F                  <1>     pop di
+   773 0000040B 5E                  <1>     pop si
+   774 0000040C 5A                  <1>     pop dx
+   775 0000040D 59                  <1>     pop cx
+   776 0000040E 5B                  <1>     pop bx
+   777 0000040F 58                  <1>     pop ax
+   778 00000410 C3                  <1>     ret
+   779                              <1> 
+   780                              <1> ; ------------------------------------------------------------
+   781                              <1> ; drawCircleFilled - FIXED VERSION (8088 Compatible)
+   782                              <1> ; ------------------------------------------------------------
+   783                              <1> drawCircleFilled:
+   784 00000411 50                  <1>     push ax
+   785 00000412 53                  <1>     push bx
+   786 00000413 51                  <1>     push cx
+   787 00000414 52                  <1>     push dx
+   788 00000415 56                  <1>     push si
+   789 00000416 57                  <1>     push di
+   790 00000417 55                  <1>     push bp
+   791                              <1> 
+   792 00000418 89E5                <1>     mov bp, sp
+   793 0000041A 83EC10              <1>     sub sp, 16
+   794                              <1>     
+   795 0000041D 8946FE              <1>     mov word [bp-2], ax
+   796 00000420 895EFC              <1>     mov word [bp-4], bx
+   797 00000423 894EFA              <1>     mov word [bp-6], cx
+   798 00000426 8856F8              <1>     mov byte [bp-8], dl
+   799                              <1> 
+   800 00000429 C746F60000          <1>     mov word [bp-10], 0
+   801 0000042E 8B46FA              <1>     mov ax, [bp-6]
+   802 00000431 8946F4              <1>     mov word [bp-12], ax
+   803                              <1> 
+   804 00000434 B80100              <1>     mov ax, 1
+   805 00000437 2B46FA              <1>     sub ax, [bp-6]
+   806 0000043A 8946F2              <1>     mov word [bp-14], ax
+   807                              <1> 
+   808                              <1> .fill_loop:
+   809                              <1>     ; Length1 = 2*x + 1
+   810 0000043D 8B46F6              <1>     mov ax, [bp-10]
+   811 00000440 D1E0                <1>     shl ax, 1
+   812 00000442 83C001              <1>     add ax, 1
+   813 00000445 89C1                <1>     mov cx, ax
+   814                              <1> 
+   815                              <1>     ; StartX = center_x - x
+   816 00000447 8B46FE              <1>     mov ax, [bp-2]
+   817 0000044A 2B46F6              <1>     sub ax, [bp-10]
+   818 0000044D 89C2                <1>     mov dx, ax
+   819                              <1> 
+   820                              <1>     ; Y = center_y - y
+   821 0000044F 8B5EFC              <1>     mov bx, [bp-4]
+   822 00000452 2B5EF4              <1>     sub bx, [bp-12]
+   823 00000455 89D0                <1>     mov ax, dx
+   824 00000457 31F6                <1>     xor si, si
+   825 00000459 8B76F8              <1>     mov si, word [bp-8]  ; Load color (byte stored in word position)
+   826 0000045C 81E6FF00            <1>     and si, 0x00FF       ; Mask to get only low byte
+   827 00000460 E8CFFC              <1>     call drawHorizontalLine
+   828                              <1> 
+   829                              <1>     ; Y = center_y + y
+   830 00000463 8B5EFC              <1>     mov bx, [bp-4]
+   831 00000466 035EF4              <1>     add bx, [bp-12]
+   832 00000469 89D0                <1>     mov ax, dx
+   833 0000046B 31F6                <1>     xor si, si
+   834 0000046D 8B76F8              <1>     mov si, word [bp-8]
+   835 00000470 81E6FF00            <1>     and si, 0x00FF
+   836 00000474 E8BBFC              <1>     call drawHorizontalLine
+   837                              <1> 
+   838                              <1>     ; Length2 = 2*y + 1
+   839 00000477 8B46F4              <1>     mov ax, [bp-12]
+   840 0000047A D1E0                <1>     shl ax, 1
+   841 0000047C 83C001              <1>     add ax, 1
+   842 0000047F 89C1                <1>     mov cx, ax
+   843                              <1> 
+   844                              <1>     ; StartX2 = center_x - y
+   845 00000481 8B46FE              <1>     mov ax, [bp-2]
+   846 00000484 2B46F4              <1>     sub ax, [bp-12]
+   847 00000487 89C2                <1>     mov dx, ax
+   848                              <1> 
+   849                              <1>     ; Y = center_y - x
+   850 00000489 8B5EFC              <1>     mov bx, [bp-4]
+   851 0000048C 2B5EF6              <1>     sub bx, [bp-10]
+   852 0000048F 89D0                <1>     mov ax, dx
+   853 00000491 31F6                <1>     xor si, si
+   854 00000493 8B76F8              <1>     mov si, word [bp-8]
+   855 00000496 81E6FF00            <1>     and si, 0x00FF
+   856 0000049A E895FC              <1>     call drawHorizontalLine
+   857                              <1> 
+   858                              <1>     ; Y = center_y + x
+   859 0000049D 8B5EFC              <1>     mov bx, [bp-4]
+   860 000004A0 035EF6              <1>     add bx, [bp-10]
+   861 000004A3 89D0                <1>     mov ax, dx
+   862 000004A5 31F6                <1>     xor si, si
+   863 000004A7 8B76F8              <1>     mov si, word [bp-8]
+   864 000004AA 81E6FF00            <1>     and si, 0x00FF
+   865 000004AE E881FC              <1>     call drawHorizontalLine
+   866                              <1> 
+   867 000004B1 8B46F2              <1>     mov ax, [bp-14]
+   868 000004B4 83F800              <1>     cmp ax, 0
+   869 000004B7 7C1C                <1>     jl .f_d_less_zero
+   870                              <1>     
+   871 000004B9 8B46F2              <1>     mov ax, [bp-14]
+   872 000004BC 8B56F6              <1>     mov dx, [bp-10]
+   873 000004BF D1E2                <1>     shl dx, 1
+   874 000004C1 8B76F4              <1>     mov si, [bp-12]
+   875 000004C4 D1E6                <1>     shl si, 1
+   876 000004C6 29F2                <1>     sub dx, si
+   877 000004C8 01D0                <1>     add ax, dx
+   878 000004CA 83C005              <1>     add ax, 5
+   879 000004CD 8946F2              <1>     mov [bp-14], ax
+   880 000004D0 FF4EF4              <1>     dec word [bp-12]
+   881 000004D3 EB10                <1>     jmp .f_d_done
+   882                              <1> 
+   883                              <1> .f_d_less_zero:
+   884 000004D5 8B46F2              <1>     mov ax, [bp-14]
+   885 000004D8 8B56F6              <1>     mov dx, [bp-10]
+   886 000004DB D1E2                <1>     shl dx, 1
+   887 000004DD 01D0                <1>     add ax, dx
+   888 000004DF 83C003              <1>     add ax, 3
+   889 000004E2 8946F2              <1>     mov [bp-14], ax
+   890                              <1> 
+   891                              <1> .f_d_done:
+   892 000004E5 FF46F6              <1>     inc word [bp-10]
+   893 000004E8 8B46F6              <1>     mov ax, [bp-10]
+   894 000004EB 3B46F4              <1>     cmp ax, [bp-12]
+   895 000004EE 0F8E4BFF            <1>     jle .fill_loop
+   896                              <1> 
+   897 000004F2 83C410              <1>     add sp, 16
+   898 000004F5 5D                  <1>     pop bp
+   899 000004F6 5F                  <1>     pop di
+   900 000004F7 5E                  <1>     pop si
+   901 000004F8 5A                  <1>     pop dx
+   902 000004F9 59                  <1>     pop cx
+   903 000004FA 5B                  <1>     pop bx
+   904 000004FB 58                  <1>     pop ax
+   905 000004FC C3                  <1>     ret
+   906                              <1> 
+   907                              <1> ; ------------------------------------------------------------
+   908                              <1> ; clearScreen320x200
+   909                              <1> ; Clears entire 320x200 VGA screen to specified color
+   910                              <1> ; INPUT: AL = Color value (0-255)
+   911                              <1> ; Uses BIOS interrupt for compatibility
+   912                              <1> ; ------------------------------------------------------------
+   913                              <1> clearScreen320x200:
+   914 000004FD 50                  <1>     push ax
+   915 000004FE 53                  <1>     push bx
+   916 000004FF 51                  <1>     push cx
+   917 00000500 52                  <1>     push dx
+   918 00000501 57                  <1>     push di
+   919 00000502 06                  <1>     push es
+   920                              <1> 
+   921                              <1>     ; Method 1: Direct VGA memory write (faster)
+   922 00000503 BB00A0              <1>     mov bx, VGA_SEGMENT
+   923 00000506 8EC3                <1>     mov es, bx
+   924 00000508 31FF                <1>     xor di, di
+   925 0000050A B900FA              <1>     mov cx, SCREEN_WIDTH * SCREEN_HEIGHT   ; 64000
+   926 0000050D 88C4                <1>     mov ah, al              ; Duplicate color in AH
+   927 0000050F F3AA                <1>     rep stosb
+   928                              <1> 
+   929 00000511 07                  <1>     pop es
+   930 00000512 5F                  <1>     pop di
+   931 00000513 5A                  <1>     pop dx
+   932 00000514 59                  <1>     pop cx
+   933 00000515 5B                  <1>     pop bx
+   934 00000516 58                  <1>     pop ax
+   935 00000517 C3                  <1>     ret
+   936                              <1> 
+   937                              <1> ; ------------------------------------------------------------
+   938                              <1> ; clearScreenBIOS
+   939                              <1> ; Alternative: Uses BIOS scroll to clear screen (slower but safer)
+   940                              <1> ; INPUT: AL = Color value
+   941                              <1> ; ------------------------------------------------------------
+   942                              <1> clearScreenBIOS:
+   943 00000518 50                  <1>     push ax
+   944 00000519 53                  <1>     push bx
+   945 0000051A 51                  <1>     push cx
+   946 0000051B 52                  <1>     push dx
+   947                              <1> 
+   948                              <1>     ; BIOS: Scroll window (clear screen)
+   949 0000051C B406                <1>     mov ah, 0x06        ; Scroll up function
+   950 0000051E B000                <1>     mov al, 0           ; Clear entire window
+   951 00000520 B700                <1>     mov bh, 0           ; Attribute (ignored in mode 13h)
+   952 00000522 B90000              <1>     mov cx, 0           ; Upper left (0,0)
+   953 00000525 BA13C8              <1>     mov dx, 0xC813      ; Lower right (200, 320 in rows/cols)
+   954 00000528 CD10                <1>     int 0x10
+   955                              <1> 
+   956 0000052A 5A                  <1>     pop dx
+   957 0000052B 59                  <1>     pop cx
+   958 0000052C 5B                  <1>     pop bx
+   959 0000052D 58                  <1>     pop ax
+   960 0000052E C3                  <1>     ret
+   961                              <1> 
+   962                              <1> ; ------------------------------------------------------------
+   963                              <1> ; setVideoMode13h
+   964                              <1> ; Sets VGA mode 320x200x256 using BIOS interrupt
+   965                              <1> ; ------------------------------------------------------------
+   966                              <1> setVideoMode13h:
+   967 0000052F 50                  <1>     push ax
+   968 00000530 B81300              <1>     mov ax, 0x0013
+   969 00000533 CD10                <1>     int 0x10
+   970 00000535 58                  <1>     pop ax
+   971 00000536 C3                  <1>     ret
+   972                              <1> 
+   973                              <1> ; ------------------------------------------------------------
+   974                              <1> ; setTextMode
+   975                              <1> ; Returns to text mode 80x25
+   976                              <1> ; ------------------------------------------------------------
+   977                              <1> setTextMode:
+   978 00000537 50                  <1>     push ax
+   979 00000538 B80300              <1>     mov ax, 0x0003
+   980 0000053B CD10                <1>     int 0x10
+   981 0000053D 58                  <1>     pop ax
+   982 0000053E C3                  <1>     ret
+    10                                  %include "Code\constants.asm"  
+     1                              <1> %define MENU_BUTTON_WIDTH 85
+     2                              <1> %define MENU_BUTTON_HEIGHT 23
+     3                              <1> %define MENU_BUTTON_X 120
+     4                              <1> %define MENU_BUTTON_Y 80
+     5                              <1> 
+     6 0000053F 0000                <1> DISP : dw 0
+     7                              <1> 
+     8 00000541 42414C4C4F4F4E2047- <1> title_text:         db "BALLOON GAME",0
+     8 0000054A 414D4500            <1>
+     9 0000054E 504C415900          <1> menu_play:          db "PLAY",0
+    10 00000553 48454C5000          <1> menu_help:          db "HELP",0
+    11 00000558 4558495400          <1> menu_exit:          db "EXIT",0
+    12 0000055D 507265737320454E54- <1> instruction_text:   db "Press ENTER to Select",0
+    12 00000566 455220746F2053656C- <1>
+    12 0000056F 65637400            <1>
+    13                              <1> 
+    14 00000573 0000                <1> dt_x_pos    dw 0
+    15 00000575 0000                <1> dt_y_pos    dw 0
+    16 00000577 00                  <1> dt_color    db 0
+    17 00000578 00                  <1> dt_scale    db 0
+    18 00000579 0000                <1> temp_width  dw 0
+    19 0000057B 0000                <1> temp_height dw 0
+    20                              <1> 
+    21                              <1> 
+    22                              <1> 
+    23                              <1> ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    24                              <1> ;;;;;;;;;;;;;;;;PAUSE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    25                              <1> ; ============================================================
+    26                              <1> ; pause_screen.asm — Enhanced Pause Overlay with Animations
+    27                              <1> ; ============================================================
+    28                              <1> ; NOTE: Add these NEW FUNCTIONS to ui.asm for reusability:
+    29                              <1> ;   - drawGradientRect     (AX=x, BX=y, CX=width, DX=height, SI=color1, DI=color2)
+    30                              <1> ;   - drawTextCentered     (DS:SI -> string, BX=y, AL=color) [auto-centers on screen]
+    31                              <1> ;   - drawMenuOption       (AX=x, BX=y, DS:SI -> string, AL=color, DL=selected_flag)
+    32                              <1> ;   - drawDarkenOverlay    (AL=darkness_level 0-3) [darkens entire screen]
+    33                              <1> ;   - drawPulseEffect      (frame_counter -> returns pulsing color in AL)
+    34                              <1> ;
+    35                              <1> ; Call showPauseScreen from main game loop when pause key pressed
+    36                              <1> ; ============================================================
+    37                              <1> 
+    38                              <1> ; ------------------------------------------------------------
+    39                              <1> ; CONFIGURATION CONSTANTS
+    40                              <1> ; ------------------------------------------------------------
+    41                              <1> 
+    42                              <1> ; === COLORS ===
+    43                              <1> %define PAUSE_PANEL_COLOR       [light_orange]    ; Dark blue
+    44                              <1> %define PAUSE_BORDER_COLOR      [dark_orange]    ; Cyan
+    45                              <1> %define PAUSE_TITLE_COLOR       [dark_brown]
+    46                              <1> 
+    47                              <1> ; === PANEL DIMENSIONS ===
+    48                              <1> %define PAUSE_PANEL_WIDTH       180
+    49                              <1> %define PAUSE_PANEL_HEIGHT      140
+    50                              <1> %define PAUSE_PANEL_X           ((320 - PAUSE_PANEL_WIDTH) / 2)
+    51                              <1> %define PAUSE_PANEL_Y           ((200 - PAUSE_PANEL_HEIGHT) / 2)
+    52                              <1> 
+    53                              <1> ; === TITLE POSITIONING ===
+    54                              <1> %define PAUSE_TITLE_Y           (PAUSE_PANEL_Y + 20)
+    55                              <1> 
+    56                              <1> ; === MENU POSITIONING ===
+    57                              <1> %define MENU_START_Y            (PAUSE_PANEL_Y + 55)
+    58                              <1> %define MENU_SPACING            18
+    59                              <1> %define MENU_OPTION_X           (PAUSE_PANEL_X + 30)
+    60                              <1> 
+    61                              <1> %define PAUSE_MENU_BUTTON_WIDTH     120
+    62                              <1> %define PAUSE_MENU_BUTTON_HEIGHT    20
+    63                              <1> %define PAUSE_MENU_BUTTON_X         PAUSE_PANEL_X + 30
+    64                              <1> %define PAUSE_MENU_BUTTON_Y         PAUSE_PANEL_Y + PAUSE_PANEL_HEIGHT / 3
+    65                              <1> 
+    66                              <1> ; ------------------------------------------------------------
+    67                              <1> ; DATA SECTION
+    68                              <1> ; ------------------------------------------------------------
+    69                              <1> 
+    70 0000057D 50415553454400      <1> pause_title         db "PAUSED", 0
+    71 00000584 524553554D45284553- <1> menu_resume         db "RESUME(ESC)", 0
+    71 0000058D 432900              <1>
+    72 00000590 524553544152542852- <1> menu_restart        db "RESTART(R)", 0
+    72 00000599 2900                <1>
+    73                              <1> ;menu_quit           db "QUIT(Q)", 0 [common in pause and game over]
+    74                              <1> 
+    75 0000059B 0000                <1> DIST : dw 0
+    76                              <1> 
+    77                              <1> ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    78                              <1> ;;;;;;;;;;;;;;;;GAMEOVER;;;;;;;;;;;;;;;;;;;;;;;;;;
+    79                              <1> 
+    80                              <1> ; ============================================================
+    81                              <1> ; gameover_screen.asm — Epic Game Over Screen with Animations
+    82                              <1> ; ============================================================
+    83                              <1> ; NOTE: Add these NEW FUNCTIONS to ui.asm for reusability:
+    84                              <1> ;   - drawFadeEffect       (AL=fade_level 0-15) [fades screen to color]
+    85                              <1> ;   - drawShadowText       (DS:SI -> string, BX=y, AL=color, DL=shadow_offset)
+    86                              <1> ;   - drawExplosionParticle(AX=x, BX=y, CL=size, DL=color)
+    87                              <1> ;   - drawScoreBreakdown   (AX=x, BX=y, DX=score, AL=color)
+    88                              <1> ;   - drawPressKeyPrompt   (BX=y, AL=blink_state)
+    89                              <1> ;   - drawStatBar          (AX=x, BX=y, CX=width, DX=value, SI=max_value, DI=color)
+    90                              <1> ;
+    91                              <1> ; Call showGameOverScreen when game ends (player loses/wins)
+    92                              <1> ; ============================================================
+    93                              <1> 
+    94                              <1> ; ------------------------------------------------------------
+    95                              <1> ; CONFIGURATION CONSTANTS
+    96                              <1> ; ------------------------------------------------------------
+    97                              <1> 
+    98                              <1> ; === COLORS ===
+    99                              <1> %define GAMEOVER_PANEL_COLOR       [light_orange]    ; Dark blue
+   100                              <1> %define GAMEOVER_BORDER_COLOR      [dark_orange]    ; Cyan
+   101                              <1> %define GAMEOVER_TITLE_COLOR       [dark_brown]
+   102                              <1> 
+   103                              <1> ; === PANEL DIMENSIONS ===
+   104                              <1> %define GAMEOVER_PANEL_WIDTH       180
+   105                              <1> %define GAMEOVER_PANEL_HEIGHT      170
+   106                              <1> %define GAMEOVER_PANEL_X           ((320 - PAUSE_PANEL_WIDTH) / 2)
+   107                              <1> %define GAMEOVER_PANEL_Y           (200 - GAMEOVER_PANEL_HEIGHT) / 2
+   108                              <1> 
+   109                              <1> %define GAMEOVER_MENU_BUTTON_WIDTH     120
+   110                              <1> %define GAMEOVER_MENU_BUTTON_HEIGHT    20
+   111                              <1> %define GAMEOVER_MENU_BUTTON_X         PAUSE_PANEL_X + 30
+   112                              <1> %define GAMEOVER_MENU_BUTTON_Y         PAUSE_PANEL_Y + PAUSE_PANEL_HEIGHT / 4
+   113                              <1> ; ------------------------------------------------------------
+   114                              <1> ; DATA SECTION
+   115                              <1> ; ------------------------------------------------------------
+   116                              <1> 
+   117 0000059D 47414D454F56455200  <1> gameover_title      db "GAMEOVER", 0
+   118 000005A6 53434F52453A203132- <1> stats_score_label   db "SCORE: 120", 0
+   118 000005AF 3000                <1>
+   119 000005B1 54494D453A31323A33- <1> stats_time_label    db "TIME:12:33", 0
+   119 000005BA 3300                <1>
+   120 000005BC 42414C4C4F4F4E533A- <1> stats_balloons_label db "BALLOONS:", 0
+   120 000005C5 00                  <1>
+   121 000005C6 205245545259285229- <1> menu_retry          db " RETRY(R)", 0
+   121 000005CF 00                  <1>
+   122 000005D0 202051554954285129- <1> menu_quit           db "  QUIT(Q)", 0
+   122 000005D9 00                  <1>
+   123                              <1> 
+   124                              <1> ; Game stats (populated by main game before calling)
+   125 000005DA 7800                <1> final_score         dw 120
+   126 000005DC 03                  <1> final_minutes       db 3
+   127 000005DD 0C                  <1> final_seconds       db 12
+   128 000005DE 6F00                <1> balloons_popped     dw 111
+   129 000005E0 0500                <1> balloons_missed     dw 5
+   130                              <1> 
+   131 000005E2 0000                <1> DIS : dw 0
+   132                              <1> 
+   133                              <1> ;;;;;;;;;;;;;;;;;;;;MAIN GAME SCREEN;;;;;;;;;;;;;;;;;;;;;;;;;;
+   134                              <1> ; ============================================================
+   135                              <1> ; main_game_screen.asm — Game UI Components (Static Display)
+   136                              <1> ; Draws score, timer, buttons, and game elements
+   137                              <1> ; ============================================================
+   138                              <1> 
+   139                              <1> ; ------------------------------------------------------------
+   140                              <1> ; CONFIGURATION CONSTANTS - Customize these for easy changes
+   141                              <1> ; ------------------------------------------------------------
+   142                              <1> 
+   143                              <1> ; === COLORS (VGA 256-color palette indices) ===
+   144                              <1> %define COLOR_WHITE         180 ; border
+   145                              <1> %define COLOR_BLACK         200 ; score text
+   146                              <1> %define COLOR_BLUE          250 ; panel
+   147                              <1> %define COLOR_DARK_BLUE     0x01
+   148                              <1> %define COLOR_RED           0x0C
+   149                              <1> %define COLOR_ORANGE        0x06
+   150                              <1> %define COLOR_YELLOW        0x0E
+   151                              <1> %define COLOR_LIGHT_GRAY    0x07
+   152                              <1> %define COLOR_DARK_GRAY     0x08
+   153                              <1> 
+   154                              <1> %define PADDING 2
+   155                              <1> %define MAX_WIDTH 320
+   156                              <1> %define BOX_WIDTH 90
+   157                              <1> %define BOX_HEIGHT 20
+   158                              <1> %define BASE_RADIUS 10
+   159                              <1> 
+   160                              <1> ; === SCORE PANEL ===
+   161                              <1> %define SCORE_PANEL_X       (MAX_WIDTH / 2) -  (SCORE_PANEL_WIDTH / 2) - 8 * PADDING
+   162                              <1> %define SCORE_PANEL_Y       2 * PADDING
+   163                              <1> %define SCORE_PANEL_WIDTH   BOX_WIDTH
+   164                              <1> %define SCORE_PANEL_HEIGHT  BOX_HEIGHT
+   165                              <1> %define SCORE_PANEL_COLOR   [light_orange]
+   166                              <1> %define SCORE_BORDER_COLOR  [dark_orange]
+   167                              <1> %define SCORE_TEXT_X        (SCORE_PANEL_X + (SCORE_PANEL_WIDTH / 16)) + PADDING
+   168                              <1> %define SCORE_TEXT_Y        ((SCORE_PANEL_Y + SCORE_PANEL_HEIGHT) / 2) - PADDING
+   169                              <1> %define SCORE_VALUE_X       ((SCORE_PANEL_X + (SCORE_PANEL_WIDTH / 2)) + (SCORE_PANEL_WIDTH / 3))
+   170                              <1> %define SCORE_VALUE_Y       ((SCORE_PANEL_Y + SCORE_PANEL_HEIGHT) / 2)
+   171                              <1> 
+   172                              <1> ; === TIMER PANEL ===
+   173                              <1> %define TIMER_PANEL_X       MAX_WIDTH - (TIMER_PANEL_WIDTH + 3 * PADDING)
+   174                              <1> %define TIMER_PANEL_Y       2 * PADDING
+   175                              <1> %define TIMER_PANEL_WIDTH   BOX_WIDTH + 15
+   176                              <1> %define TIMER_PANEL_HEIGHT  BOX_HEIGHT
+   177                              <1> %define TIMER_PANEL_COLOR   [light_orange]
+   178                              <1> %define TIMER_BORDER_COLOR  [dark_orange]
+   179                              <1> %define TIMER_TEXT_X        TIMER_PANEL_X + 4 * PADDING
+   180                              <1> %define TIMER_TEXT_Y        ((TIMER_PANEL_Y + TIMER_PANEL_HEIGHT) / 2) - PADDING
+   181                              <1> %define TIMER_VALUE_X       TIMER_PANEL_X 
+   182                              <1> %define TIMER_VALUE_Y       ((TIMER_PANEL_Y + TIMER_PANEL_HEIGHT) / 2)
+   183                              <1> 
+   184                              <1> ; === SOUND BUTTON ===
+   185                              <1> %define SOUND_BTN_RADIUS    BASE_RADIUS
+   186                              <1> %define SOUND_BTN_X         PADDING + ((SOUND_BTN_RADIUS / 2) + SOUND_BTN_RADIUS)
+   187                              <1> %define SOUND_BTN_Y         ((PADDING / 2) + PADDING) + SOUND_BTN_RADIUS
+   188                              <1> %define SOUND_BTN_COLOR     [light_orange]
+   189                              <1> %define SOUND_BTN_BORDER    [dark_orange]
+   190                              <1> 
+   191                              <1> ; === PAUSE BUTTON ===
+   192                              <1> %define PAUSE_BTN_RADIUS    BASE_RADIUS
+   193                              <1> %define PAUSE_BTN_X         SOUND_BTN_X + (((SOUND_BTN_RADIUS / 2) + SOUND_BTN_RADIUS) + PADDING + PAUSE_BTN_RADIUS)
+   194                              <1> %define PAUSE_BTN_Y         ((PADDING / 2) + PADDING) + PAUSE_BTN_RADIUS
+   195                              <1> %define PAUSE_BTN_COLOR     [light_orange]
+   196                              <1> %define PAUSE_BTN_BORDER    [dark_brown]
+   197                              <1> 
+   198                              <1> ; === BALLOONS ===
+   199                              <1> %define BALLOON_WIDTH       30
+   200                              <1> %define BALLOON_HEIGHT      40
+   201                              <1> %define BALLOON_STRING_LEN  18
+   202                              <1> 
+   203                              <1> ; === TEXT RENDERING ===
+   204                              <1> %define CHAR_WIDTH          8
+   205                              <1> %define CHAR_HEIGHT         8
+   206                              <1> 
+   207                              <1> ; ------------------------------------------------------------
+   208                              <1> ; DATA SECTION
+   209                              <1> ; ------------------------------------------------------------
+   210                              <1> 
+   211 000005E4 5000                <1> current_score       dw 80
+   212 000005E6 0C                  <1> current_minutes     db 12
+   213 000005E7 2F                  <1> current_seconds     db 47
+   214 000005E8 01                  <1> sound_enabled       db 1
+   215 000005E9 00                  <1> game_paused         db 0
+   216                              <1> 
+   217 000005EA 53434F52453A313230- <1> score_label         db "SCORE:120", 0
+   217 000005F3 00                  <1>
+   218 000005F4 54494D453A31323A33- <1> timer_label         db "TIME:12:33", 0
+   218 000005FD 3300                <1>
+   219                              <1> 
+   220 000005FF 00                  <1> temp_color  db 0    ; Temporary storage for circle fill color
+   221                              <1> 
+   222                              <1> ; ============================================================
+   223                              <1> ; NAVIGATION CONSTANTS
+   224                              <1> ; ============================================================
+   225                              <1> %define MENU_OPTION_PLAY    0
+   226                              <1> %define MENU_OPTION_HELP    1
+   227                              <1> %define MENU_OPTION_EXIT    2
+   228                              <1> %define TOTAL_MENU_OPTIONS  3
+   229                              <1> 
+   230                              <1> ; Arrow indicator position
+   231                              <1> %define ARROW_X_OFFSET      100
+   232                              <1> %define ARROW_FIRST_Y       (MENU_BUTTON_Y + 8)
+   233                              <1> 
+   234                              <1> ; Keyboard scan codes
+   235                              <1> %define KEY_UP              0x48
+   236                              <1> %define KEY_DOWN            0x50
+   237                              <1> %define KEY_ENTER           0x1C
+   238                              <1> %define KEY_ESC             0x01
+   239                              <1> 
+   240                              <1> ; Game states
+   241                              <1> %define STATE_MENU          0
+   242                              <1> %define STATE_GAME          1
+   243                              <1> %define STATE_PAUSE         2
+   244                              <1> %define STATE_GAMEOVER      3
+   245                              <1> %define STATE_EXIT          4
+   246                              <1> 
+   247                              <1> ; Global variables
+   248 00000600 00                  <1> current_selection   db 0        ; Currently selected menu option (0-2)
+   249 00000601 00                  <1> game_state          db STATE_MENU
+    11                                  %include "Code\sound.asm"
+     1                              <1> ; sound.asm — PC Speaker victory sound
+     2                              <1> ; Compatible with NASM (COM or EXE)
+     3                              <1> 
+     4                              <1> melodyFreqs:
+     5 00000602 20038403E8034C04B0- <1>     dw 800, 900, 1000, 1100, 1200, 1300, 1400, 1500
+     5 0000060B 0414057805DC05      <1>
+     6 00000612 DC0578051405B0044C- <1>     dw 1500, 1400, 1300, 1200, 1100, 1000, 900, 800
+     6 0000061B 04E80384032003      <1>
+     7                              <1> numNotes    equ 16
+     8 00000622 0200                <1> tempo       dw 2
+     9 00000624 DC341200            <1> pit_constant: dd 1193180    ; Store as 32-bit constant
+    10                              <1> 
+    11                              <1> ; ---------------------------------------
+    12                              <1> ; playCompletionSound — main entry
+    13                              <1> ; ---------------------------------------
+    14                              <1> playCompletionSound:
+    15 00000628 50                  <1>     push ax
+    16 00000629 53                  <1>     push bx
+    17 0000062A 51                  <1>     push cx
+    18 0000062B 52                  <1>     push dx
+    19 0000062C 56                  <1>     push si
+    20                              <1> 
+    21 0000062D BE[0206]            <1>     mov si, melodyFreqs
+    22 00000630 B91000              <1>     mov cx, numNotes
+    23                              <1> .loopNotes:
+    24 00000633 AD                  <1>     lodsw                  ; AX = frequency
+    25 00000634 09C0                <1>     or  ax, ax
+    26 00000636 7405                <1>     jz  .done
+    27 00000638 E80800              <1>     call playTone
+    28 0000063B E2F6                <1>     loop .loopNotes
+    29                              <1> 
+    30                              <1> .done:
+    31 0000063D 5E                  <1>     pop si
+    32 0000063E 5A                  <1>     pop dx
+    33 0000063F 59                  <1>     pop cx
+    34 00000640 5B                  <1>     pop bx
+    35 00000641 58                  <1>     pop ax
+    36 00000642 C3                  <1>     ret
+    37                              <1> 
+    38                              <1> ; ---------------------------------------
+    39                              <1> ; playTone — AX = frequency (Hz)
+    40                              <1> ; ---------------------------------------
+    41                              <1> playTone:
+    42 00000643 50                  <1>     push ax
+    43 00000644 53                  <1>     push bx
+    44 00000645 51                  <1>     push cx
+    45 00000646 52                  <1>     push dx
+    46                              <1> 
+    47 00000647 89C3                <1>     mov bx, ax              ; Save frequency in BX
+    48                              <1>     
+    49                              <1>     ; Load 1193180 into DX:AX
+    50 00000649 A1[2406]            <1>     mov ax, word [pit_constant]      ; Low word
+    51 0000064C 8B16[2606]          <1>     mov dx, word [pit_constant + 2]  ; High word
+    52                              <1>     
+    53                              <1>     ; Divide DX:AX by BX -> quotient in AX
+    54 00000650 F7F3                <1>     div bx                  ; DX:AX / BX = AX (remainder in DX)
+    55 00000652 89C3                <1>     mov bx, ax              ; BX = divisor
+    56                              <1> 
+    57                              <1>     ; Program PIT channel 2
+    58 00000654 B0B6                <1>     mov al, 0xB6
+    59 00000656 E643                <1>     out 0x43, al
+    60 00000658 89D8                <1>     mov ax, bx
+    61 0000065A E642                <1>     out 0x42, al            ; low byte
+    62 0000065C 88E0                <1>     mov al, ah
+    63 0000065E E642                <1>     out 0x42, al            ; high byte
+    64                              <1> 
+    65                              <1>     ; Enable speaker
+    66 00000660 E461                <1>     in al, 0x61
+    67 00000662 0C03                <1>     or al, 3
+    68 00000664 E661                <1>     out 0x61, al
+    69                              <1> 
+    70                              <1>     ; Hold tone
+    71 00000666 E80B00              <1>     call toneDelay
+    72                              <1> 
+    73                              <1>     ; Disable speaker
+    74 00000669 E461                <1>     in al, 0x61
+    75 0000066B 24FC                <1>     and al, 0xFC
+    76 0000066D E661                <1>     out 0x61, al
+    77                              <1> 
+    78 0000066F 5A                  <1>     pop dx
+    79 00000670 59                  <1>     pop cx
+    80 00000671 5B                  <1>     pop bx
+    81 00000672 58                  <1>     pop ax
+    82 00000673 C3                  <1>     ret
+    83                              <1> 
+    84                              <1> ; ---------------------------------------
+    85                              <1> ; toneDelay — simple busy wait
+    86                              <1> ; ---------------------------------------
+    87                              <1> toneDelay:
+    88 00000674 51                  <1>     push cx
+    89 00000675 52                  <1>     push dx
+    90 00000676 8B16[2206]          <1>     mov dx, [tempo]
+    91                              <1> .delayOuter:
+    92 0000067A B9FFAF              <1>     mov cx, 0xAFFF
+    93                              <1> .delayInner:
+    94 0000067D E2FE                <1>     loop .delayInner
+    95 0000067F 4A                  <1>     dec dx
+    96 00000680 75F8                <1>     jnz .delayOuter
+    97 00000682 5A                  <1>     pop dx
+    98 00000683 59                  <1>     pop cx
+    99 00000684 C3                  <1>     ret
+    12                                  %include "Code\show_bg.asm"
+     1                              <1> ; ============================================================
+     2                              <1> ; show_bg.asm — Draws VGA 320x200x256 background with palette
+     3                              <1> ; ============================================================
+     4                              <1> 
+     5                              <1> ; No ORG / BITS — This is a callable module
+     6                              <1> 
+     7                              <1> %define MODE_VGA13H  0x0013
+     8                              <1> %define VIDEO_SEG    0xA000
+     9                              <1> %define SCREEN_SIZE  64000
+    10                              <1> %define CHUNK_SIZE   8192
+    11                              <1> 
+    12                              <1> ; ------------------------------------------------------------
+    13                              <1> ; PUBLIC: showBackground320x200
+    14                              <1> ; Loads and displays final.raw using vga.bin palette
+    15                              <1> ; ------------------------------------------------------------
+    16                              <1> showBackground320x200:
+    17 00000685 50                  <1>     push ax
+    18 00000686 53                  <1>     push bx
+    19 00000687 51                  <1>     push cx
+    20 00000688 52                  <1>     push dx
+    21 00000689 56                  <1>     push si
+    22 0000068A 57                  <1>     push di
+    23 0000068B 1E                  <1>     push ds
+    24 0000068C 06                  <1>     push es
+    25                              <1> 
+    26                              <1>     ; --------------------------------------------------------
+    27                              <1>     ; Load custom 256-color palette from "vga.bin"
+    28                              <1>     ; --------------------------------------------------------
+    29 0000068D E84900              <1>     call load_palette
+    30                              <1> 
+    31                              <1>     ; --------------------------------------------------------
+    32                              <1>     ; Load and display background image from "final.raw"
+    33                              <1>     ; --------------------------------------------------------
+    34 00000690 B800A0              <1>     mov ax, VIDEO_SEG
+    35 00000693 8EC0                <1>     mov es, ax
+    36 00000695 31FF                <1>     xor di, di
+    37                              <1> 
+    38                              <1>     ; Open RAW file (read-only)
+    39 00000697 8D16[1507]          <1>     lea dx, [filename]
+    40 0000069B B43D                <1>     mov ah, 0x3D
+    41 0000069D 30C0                <1>     xor al, al
+    42 0000069F CD21                <1>     int 0x21
+    43 000006A1 722D                <1>     jc .cleanup
+    44 000006A3 89C3                <1>     mov bx, ax                  ; BX = file handle
+    45                              <1> 
+    46                              <1> .read_loop:
+    47                              <1>     ; Read chunk into buffer
+    48 000006A5 B43F                <1>     mov ah, 0x3F
+    49 000006A7 B90020              <1>     mov cx, CHUNK_SIZE
+    50 000006AA 8D16[2D07]          <1>     lea dx, [buffer]
+    51 000006AE CD21                <1>     int 0x21
+    52 000006B0 721A                <1>     jc .close_file
+    53 000006B2 09C0                <1>     or ax, ax
+    54 000006B4 7416                <1>     jz .close_file              ; EOF reached
+    55                              <1> 
+    56                              <1>     ; Copy to VGA memory (use ES:DI for video, DS:SI for buffer)
+    57 000006B6 1E                  <1>     push ds
+    58 000006B7 BE[2D07]            <1>     mov si, buffer
+    59 000006BA 89C1                <1>     mov cx, ax
+    60                              <1> .copy_loop:
+    61 000006BC 8A04                <1>     mov al, [si]
+    62 000006BE 268805              <1>     mov [es:di], al
+    63 000006C1 46                  <1>     inc si
+    64 000006C2 47                  <1>     inc di
+    65 000006C3 E2F7                <1>     loop .copy_loop
+    66 000006C5 1F                  <1>     pop ds
+    67                              <1> 
+    68 000006C6 81FF00FA            <1>     cmp di, SCREEN_SIZE
+    69 000006CA 72D9                <1>     jb .read_loop
+    70                              <1> 
+    71                              <1> .close_file:
+    72 000006CC B43E                <1>     mov ah, 0x3E
+    73 000006CE CD21                <1>     int 0x21
+    74                              <1> 
+    75                              <1> .cleanup:
+    76 000006D0 07                  <1>     pop es
+    77 000006D1 1F                  <1>     pop ds
+    78 000006D2 5F                  <1>     pop di
+    79 000006D3 5E                  <1>     pop si
+    80 000006D4 5A                  <1>     pop dx
+    81 000006D5 59                  <1>     pop cx
+    82 000006D6 5B                  <1>     pop bx
+    83 000006D7 58                  <1>     pop ax
+    84 000006D8 C3                  <1>     ret
+    85                              <1> 
+    86                              <1> 
+    87                              <1> ; ------------------------------------------------------------
+    88                              <1> ; load_palette — Loads "vga.bin" and programs VGA DAC registers
+    89                              <1> ; ------------------------------------------------------------
+    90                              <1> load_palette:
+    91 000006D9 50                  <1>     push ax
+    92 000006DA 53                  <1>     push bx
+    93 000006DB 51                  <1>     push cx
+    94 000006DC 52                  <1>     push dx
+    95 000006DD 56                  <1>     push si
+    96 000006DE 1E                  <1>     push ds
+    97                              <1> 
+    98                              <1>     ; Open palette file
+    99 000006DF 8D16[2107]          <1>     lea dx, [palette_filename]
+   100 000006E3 B43D                <1>     mov ah, 0x3D
+   101 000006E5 30C0                <1>     xor al, al
+   102 000006E7 CD21                <1>     int 0x21
+   103 000006E9 7223                <1>     jc .lp_exit
+   104 000006EB 89C3                <1>     mov bx, ax
+   105                              <1> 
+   106                              <1>     ; Read 768 bytes (256 colors * 3 bytes)
+   107 000006ED B43F                <1>     mov ah, 0x3F
+   108 000006EF B90003              <1>     mov cx, 768
+   109 000006F2 8D16[2D27]          <1>     lea dx, [palette_buffer]
+   110 000006F6 CD21                <1>     int 0x21
+   111                              <1> 
+   112                              <1>     ; Close palette file
+   113 000006F8 B43E                <1>     mov ah, 0x3E
+   114 000006FA CD21                <1>     int 0x21
+   115                              <1> 
+   116                              <1>     ; Write to VGA DAC registers
+   117 000006FC BAC803              <1>     mov dx, 0x03C8
+   118 000006FF 30C0                <1>     xor al, al
+   119 00000701 EE                  <1>     out dx, al                 ; start from color 0
+   120 00000702 42                  <1>     inc dx
+   121 00000703 8D36[2D27]          <1>     lea si, [palette_buffer]
+   122 00000707 B90003              <1>     mov cx, 768
+   123                              <1> .lp_out:
+   124 0000070A AC                  <1>     lodsb
+   125 0000070B EE                  <1>     out dx, al
+   126 0000070C E2FC                <1>     loop .lp_out
+   127                              <1> 
+   128                              <1> .lp_exit:
+   129 0000070E 1F                  <1>     pop ds
+   130 0000070F 5E                  <1>     pop si
+   131 00000710 5A                  <1>     pop dx
+   132 00000711 59                  <1>     pop cx
+   133 00000712 5B                  <1>     pop bx
+   134 00000713 58                  <1>     pop ax
+   135 00000714 C3                  <1>     ret
+   136                              <1> 
+   137                              <1> 
+   138                              <1> ; ------------------------------------------------------------
+   139                              <1> ; Data Buffers and Filenames
+   140                              <1> ; ------------------------------------------------------------
+   141 00000715 696D67446174612E72- <1> filename          db "imgData.raw",0
+   141 0000071E 617700              <1>
+   142 00000721 70616C657474652E62- <1> palette_filename  db "palette.bin",0
+   142 0000072A 696E00              <1>
+   143                              <1> 
+   144 0000072D 00<rep 2000h>       <1> buffer            times CHUNK_SIZE db 0
+   145 0000272D 00<rep 300h>        <1> palette_buffer    times 768 db 0
+    13                                  %include "Code\navigation.asm"      ; NEW: Navigation system
+     1                              <1> ; ============================================================
+     2                              <1> ; navigation.asm — Menu Navigation System with Arrow Keys
+     3                              <1> ; ============================================================
+     4                              <1> 
+     5                              <1> ; ------------------------------------------------------------
+     6                              <1> ; handleMainMenuInput
+     7                              <1> ; Handles arrow key navigation and Enter selection
+     8                              <1> ; RETURNS: AL = selected option (0=Play, 1=Help, 2=Exit, 0xFF=ESC)
+     9                              <1> ; ------------------------------------------------------------
+    10                              <1> handleMainMenuInput:
+    11 00002A2D 53                  <1>     push bx
+    12 00002A2E 51                  <1>     push cx
+    13 00002A2F 52                  <1>     push dx
+    14                              <1> 
+    15                              <1>     ; Initialize selection to first option
+    16 00002A30 C606[0006]00        <1>     mov byte [current_selection], MENU_OPTION_PLAY
+    17                              <1> 
+    18                              <1> .input_loop:
+    19                              <1>     ; Draw arrow at current selection
+    20 00002A35 E85800              <1>     call drawMenuArrow
+    21                              <1> 
+    22                              <1>     ; Wait for keypress
+    23 00002A38 B400                <1>     mov ah, 0x00
+    24 00002A3A CD16                <1>     int 0x16                ; AH=scan code, AL=ASCII
+    25                              <1> 
+    26 00002A3C 80FC48              <1>     cmp ah, KEY_UP
+    27 00002A3F 7411                <1>     je .move_up
+    28 00002A41 80FC50              <1>     cmp ah, KEY_DOWN
+    29 00002A44 7423                <1>     je .move_down
+    30 00002A46 80FC1C              <1>     cmp ah, KEY_ENTER
+    31 00002A49 7435                <1>     je .select_option
+    32 00002A4B 80FC01              <1>     cmp ah, KEY_ESC
+    33 00002A4E 743A                <1>     je .exit_pressed
+    34 00002A50 EBE3                <1>     jmp .input_loop         ; Ignore other keys
+    35                              <1> 
+    36                              <1> .move_up:
+    37                              <1>     ; Clear current arrow
+    38 00002A52 E86000              <1>     call clearMenuArrow
+    39                              <1>     
+    40                              <1>     ; Move selection up (with wrap-around)
+    41 00002A55 A0[0006]            <1>     mov al, [current_selection]
+    42 00002A58 3C00                <1>     cmp al, 0
+    43 00002A5A 7406                <1>     je .wrap_to_bottom
+    44 00002A5C FE0E[0006]          <1>     dec byte [current_selection]
+    45 00002A60 EBD3                <1>     jmp .input_loop
+    46                              <1> 
+    47                              <1> .wrap_to_bottom:
+    48 00002A62 C606[0006]02        <1>     mov byte [current_selection], TOTAL_MENU_OPTIONS - 1
+    49 00002A67 EBCC                <1>     jmp .input_loop
+    50                              <1> 
+    51                              <1> .move_down:
+    52                              <1>     ; Clear current arrow
+    53 00002A69 E84900              <1>     call clearMenuArrow
+    54                              <1>     
+    55                              <1>     ; Move selection down (with wrap-around)
+    56 00002A6C A0[0006]            <1>     mov al, [current_selection]
+    57 00002A6F 3C02                <1>     cmp al, TOTAL_MENU_OPTIONS - 1
+    58 00002A71 7406                <1>     je .wrap_to_top
+    59 00002A73 FE06[0006]          <1>     inc byte [current_selection]
+    60 00002A77 EBBC                <1>     jmp .input_loop
+    61                              <1> 
+    62                              <1> .wrap_to_top:
+    63 00002A79 C606[0006]00        <1>     mov byte [current_selection], 0
+    64 00002A7E EBB5                <1>     jmp .input_loop
+    65                              <1> 
+    66                              <1> .select_option:
+    67 00002A80 E83200              <1>     call clearMenuArrow
+    68 00002A83 A0[0006]            <1>     mov al, [current_selection]
+    69 00002A86 5A                  <1>     pop dx
+    70 00002A87 59                  <1>     pop cx
+    71 00002A88 5B                  <1>     pop bx
+    72 00002A89 C3                  <1>     ret
+    73                              <1> 
+    74                              <1> .exit_pressed:
+    75 00002A8A B0FF                <1>     mov al, 0xFF            ; Return special value for ESC
+    76 00002A8C 5A                  <1>     pop dx
+    77 00002A8D 59                  <1>     pop cx
+    78 00002A8E 5B                  <1>     pop bx
+    79 00002A8F C3                  <1>     ret
+    80                              <1> 
+    81                              <1> ; ------------------------------------------------------------
+    82                              <1> ; drawMenuArrow
+    83                              <1> ; Draws '>' arrow at current selection position
+    84                              <1> ; ------------------------------------------------------------
+    85                              <1> drawMenuArrow:
+    86 00002A90 50                  <1>     push ax
+    87 00002A91 53                  <1>     push bx
+    88 00002A92 51                  <1>     push cx
+    89 00002A93 52                  <1>     push dx
+    90                              <1> 
+    91                              <1>     ; Calculate Y position based on selection
+    92 00002A94 31C0                <1>     xor ax, ax
+    93 00002A96 A0[0006]            <1>     mov al, [current_selection]
+    94 00002A99 BB1700              <1>     mov bx, MENU_BUTTON_HEIGHT
+    95 00002A9C 83C30B              <1>     add bx, MENU_BUTTON_HEIGHT / 2  ; Spacing between buttons
+    96 00002A9F F7E3                <1>     mul bx
+    97 00002AA1 83C058              <1>     add ax, ARROW_FIRST_Y
+    98 00002AA4 89C2                <1>     mov dx, ax
+    99                              <1> 
+   100                              <1>     ; Draw arrow
+   101 00002AA6 B96400              <1>     mov cx, ARROW_X_OFFSET
+   102 00002AA9 8A1E[1100]          <1>     mov bl, [dark_brown]     ; Arrow color
+   103 00002AAD E83FD8              <1>     call drawSelectionArrow
+   104                              <1> 
+   105 00002AB0 5A                  <1>     pop dx
+   106 00002AB1 59                  <1>     pop cx
+   107 00002AB2 5B                  <1>     pop bx
+   108 00002AB3 58                  <1>     pop ax
+   109 00002AB4 C3                  <1>     ret
+   110                              <1> 
+   111                              <1> ; ------------------------------------------------------------
+   112                              <1> ; clearMenuArrow
+   113                              <1> ; Erases arrow at current selection (draws space in bg color)
+   114                              <1> ; ------------------------------------------------------------
+   115                              <1> clearMenuArrow:
+   116 00002AB5 50                  <1>     push ax
+   117 00002AB6 53                  <1>     push bx
+   118 00002AB7 51                  <1>     push cx
+   119 00002AB8 52                  <1>     push dx
+   120                              <1> 
+   121                              <1>     ; Calculate Y position
+   122 00002AB9 31C0                <1>     xor ax, ax
+   123 00002ABB A0[0006]            <1>     mov al, [current_selection]
+   124 00002ABE BB1700              <1>     mov bx, MENU_BUTTON_HEIGHT
+   125 00002AC1 83C30B              <1>     add bx, MENU_BUTTON_HEIGHT / 2
+   126 00002AC4 F7E3                <1>     mul bx
+   127 00002AC6 83C058              <1>     add ax, ARROW_FIRST_Y
+   128 00002AC9 89C2                <1>     mov dx, ax
+   129                              <1> 
+   130                              <1>     ; Draw space (or redraw background color)
+   131 00002ACB B96400              <1>     mov cx, ARROW_X_OFFSET
+   132 00002ACE 8A1E[0300]          <1>     mov bl, [char_color]     ; Background color
+   133 00002AD2 E81AD8              <1>     call drawSelectionArrow  ; Draws space in bg color
+   134                              <1> 
+   135 00002AD5 5A                  <1>     pop dx
+   136 00002AD6 59                  <1>     pop cx
+   137 00002AD7 5B                  <1>     pop bx
+   138 00002AD8 58                  <1>     pop ax
+   139 00002AD9 C3                  <1>     ret
+   140                              <1> 
+   141                              <1> ; ------------------------------------------------------------
+   142                              <1> ; executeMenuChoice
+   143                              <1> ; Executes the selected menu option
+   144                              <1> ; INPUT: AL = selected option (0-2)
+   145                              <1> ; ------------------------------------------------------------
+   146                              <1> executeMenuChoice:
+   147 00002ADA 50                  <1>     push ax
+   148 00002ADB 53                  <1>     push bx
+   149                              <1> 
+   150 00002ADC 3C00                <1>     cmp al, MENU_OPTION_PLAY
+   151 00002ADE 740A                <1>     je .start_game
+   152 00002AE0 3C01                <1>     cmp al, MENU_OPTION_HELP
+   153 00002AE2 7410                <1>     je .show_help
+   154 00002AE4 3C02                <1>     cmp al, MENU_OPTION_EXIT
+   155 00002AE6 7416                <1>     je .exit_game
+   156 00002AE8 EB1B                <1>     jmp .done
+   157                              <1> 
+   158                              <1> .start_game:
+   159 00002AEA C606[0106]01        <1>     mov byte [game_state], STATE_GAME
+   160 00002AEF E8C401              <1>     call showMainGameScreen
+   161 00002AF2 EB11                <1>     jmp .done
+   162                              <1> 
+   163                              <1> .show_help:
+   164                              <1>     ; TODO: Implement help screen
+   165                              <1>     ; For now, just show a message and return to menu
+   166 00002AF4 E81100              <1>     call showHelpScreen
+   167 00002AF7 C606[0106]00        <1>     mov byte [game_state], STATE_MENU
+   168 00002AFC EB07                <1>     jmp .done
+   169                              <1> 
+   170                              <1> .exit_game:
+   171 00002AFE C606[0106]04        <1>     mov byte [game_state], STATE_EXIT
+   172 00002B03 EB00                <1>     jmp .done
+   173                              <1> 
+   174                              <1> .done:
+   175 00002B05 5B                  <1>     pop bx
+   176 00002B06 58                  <1>     pop ax
+   177 00002B07 C3                  <1>     ret
+   178                              <1> 
+   179                              <1> ; ------------------------------------------------------------
+   180                              <1> ; showHelpScreen (Placeholder)
+   181                              <1> ; Shows instructions, press any key to return
+   182                              <1> ; ------------------------------------------------------------
+   183                              <1> showHelpScreen:
+   184 00002B08 50                  <1>     push ax
+   185 00002B09 53                  <1>     push bx
+   186 00002B0A 51                  <1>     push cx
+   187 00002B0B 52                  <1>     push dx
+   188 00002B0C 56                  <1>     push si
+   189                              <1> 
+   190                              <1>     ; Clear screen to background
+   191 00002B0D E88DD6              <1>     call clearScreen
+   192                              <1> 
+   193                              <1>     ; Display help text
+   194 00002B10 B92800              <1>     mov cx, 40
+   195 00002B13 BA3C00              <1>     mov dx, 60
+   196 00002B16 BE[7A2B]            <1>     mov si, help_title
+   197 00002B19 8A1E[1100]          <1>     mov bl, [dark_brown]
+   198 00002B1D B702                <1>     mov bh, 2
+   199 00002B1F E8BED6              <1>     call drawText
+   200                              <1> 
+   201 00002B22 B91E00              <1>     mov cx, 30
+   202 00002B25 BA5A00              <1>     mov dx, 90
+   203 00002B28 BE[862B]            <1>     mov si, help_line1
+   204 00002B2B 8A1E[1100]          <1>     mov bl, [dark_brown]
+   205 00002B2F B701                <1>     mov bh, 1
+   206 00002B31 E8ACD6              <1>     call drawText
+   207                              <1> 
+   208 00002B34 B91E00              <1>     mov cx, 30
+   209 00002B37 BA6900              <1>     mov dx, 105
+   210 00002B3A BE[9F2B]            <1>     mov si, help_line2
+   211 00002B3D 8A1E[1100]          <1>     mov bl, [dark_brown]
+   212 00002B41 B701                <1>     mov bh, 1
+   213 00002B43 E89AD6              <1>     call drawText
+   214                              <1> 
+   215 00002B46 B91E00              <1>     mov cx, 30
+   216 00002B49 BA7800              <1>     mov dx, 120
+   217 00002B4C BE[B72B]            <1>     mov si, help_line3
+   218 00002B4F 8A1E[1100]          <1>     mov bl, [dark_brown]
+   219 00002B53 B701                <1>     mov bh, 1
+   220 00002B55 E888D6              <1>     call drawText
+   221                              <1> 
+   222 00002B58 B93200              <1>     mov cx, 50
+   223 00002B5B BA9600              <1>     mov dx, 150
+   224 00002B5E BE[CA2B]            <1>     mov si, help_exit
+   225 00002B61 8A1E[1000]          <1>     mov bl, [nature_dark_green]
+   226 00002B65 B701                <1>     mov bh, 1
+   227 00002B67 E876D6              <1>     call drawText
+   228                              <1> 
+   229                              <1>     ; Wait for keypress
+   230 00002B6A B400                <1>     mov ah, 0x00
+   231 00002B6C CD16                <1>     int 0x16
+   232                              <1> 
+   233                              <1>     ; Redraw background and menu
+   234 00002B6E E814DB              <1>     call showBackground320x200
+   235 00002B71 E86700              <1>     call drawMainMenu
+   236                              <1> 
+   237 00002B74 5E                  <1>     pop si
+   238 00002B75 5A                  <1>     pop dx
+   239 00002B76 59                  <1>     pop cx
+   240 00002B77 5B                  <1>     pop bx
+   241 00002B78 58                  <1>     pop ax
+   242 00002B79 C3                  <1>     ret
+   243                              <1> 
+   244                              <1> ; Help screen text
+   245 00002B7A 484F5720544F20504C- <1> help_title:     db "HOW TO PLAY", 0
+   245 00002B83 415900              <1>
+   246 00002B86 54797065206C657474- <1> help_line1:     db "Type letters on balloons", 0
+   246 00002B8F 657273206F6E206261- <1>
+   246 00002B98 6C6C6F6F6E7300      <1>
+   247 00002B9F 506F702062616C6C6F- <1> help_line2:     db "Pop balloons for points", 0
+   247 00002BA8 6F6E7320666F722070- <1>
+   247 00002BB1 6F696E747300        <1>
+   248 00002BB7 32206D696E75746573- <1> help_line3:     db "2 minutes to play!", 0
+   248 00002BC0 20746F20706C617921- <1>
+   248 00002BC9 00                  <1>
+   249 00002BCA 507265737320616E79- <1> help_exit:      db "Press any key...", 0
+   249 00002BD3 206B65792E2E2E00    <1>
+    14                                  %include "Code\main_menu.asm"
+     1                              <1> ; ======================================================================
+     2                              <1> ; drawMainMenu
+     3                              <1> ; Draws the main menu with title, Play button, and Exit button.
+     4                              <1> ; ======================================================================
+     5                              <1> 
+     6                              <1> drawMainMenu:
+     7 00002BDB 50                  <1>     push ax
+     8 00002BDC 53                  <1>     push bx
+     9 00002BDD 51                  <1>     push cx
+    10 00002BDE 52                  <1>     push dx
+    11 00002BDF 56                  <1>     push si
+    12 00002BE0 57                  <1>     push di
+    13                              <1> 
+    14                              <1>     ; ------------------------------------------------------------
+    15                              <1>     ; TITLE
+    16                              <1>     ; ------------------------------------------------------------
+    17 00002BE1 B93200              <1>     mov  cx, 50
+    18 00002BE4 BA1E00              <1>     mov  dx, 30
+    19 00002BE7 BE[4105]            <1>     mov  si, title_text              ; DS:SI -> title string
+    20 00002BEA 8A1E[1000]          <1>     mov  bl, [nature_dark_green]     ; color
+    21 00002BEE B702                <1>     mov  bh, 2                       ; scale
+    22 00002BF0 E8EDD5              <1>     call drawText
+    23                              <1> 
+    24                              <1>     ; ------------------------------------------------------------
+    25                              <1>     ; PLAY BUTTON
+    26                              <1>     ; ------------------------------------------------------------
+    27 00002BF3 B87100              <1>     mov  ax, MENU_BUTTON_X - 7
+    28 00002BF6 BB4E00              <1>     mov  bx, MENU_BUTTON_Y - 2
+    29 00002BF9 B96400              <1>     mov  cx, MENU_BUTTON_WIDTH + 15
+    30 00002BFC BA1B00              <1>     mov  dx, MENU_BUTTON_HEIGHT + 4
+    31 00002BFF 8B36[0800]          <1>     mov  si, [dark_orange]                 ; outer color
+    32 00002C03 8B3E[1100]          <1>     mov  di, [dark_brown]     ; fill color
+    33 00002C07 E80AD4              <1>     call drawRoundedRect
+    34                              <1> 
+    35                              <1>     ; --- PLAY TEXT ---
+    36 00002C0A B87800              <1>     mov  ax, MENU_BUTTON_X
+    37 00002C0D 83C00A              <1>     add  ax, MENU_BUTTON_WIDTH / 8
+    38 00002C10 89C1                <1>     mov  cx, ax
+    39                              <1> 
+    40 00002C12 B85000              <1>     mov  ax, MENU_BUTTON_Y
+    41 00002C15 83C005              <1>     add  ax, MENU_BUTTON_HEIGHT / 4
+    42 00002C18 89C2                <1>     mov  dx, ax
+    43                              <1> 
+    44 00002C1A BE[4E05]            <1>     mov  si, menu_play
+    45 00002C1D 8A1E[1100]          <1>     mov  bl, [dark_brown]
+    46 00002C21 B702                <1>     mov  bh, 2
+    47 00002C23 E8BAD5              <1>     call drawText
+    48                              <1> 
+    49 00002C26 E88000              <1>     call updatePadding
+    50                              <1> 
+    51                              <1>     ; ------------------------------------------------------------
+    52                              <1>     ; HELP BUTTON
+    53                              <1>     ; ------------------------------------------------------------
+    54 00002C29 B87100              <1>     mov  ax, MENU_BUTTON_X - 7
+    55 00002C2C BB4E00              <1>     mov  bx, MENU_BUTTON_Y - 2
+    56 00002C2F 031E[3F05]          <1>     add  bx, [DISP]
+    57 00002C33 B96400              <1>     mov  cx, MENU_BUTTON_WIDTH + 15
+    58 00002C36 BA1B00              <1>     mov  dx, MENU_BUTTON_HEIGHT + 4
+    59 00002C39 8B36[0800]          <1>     mov  si, [dark_orange]
+    60 00002C3D 8B3E[1100]          <1>     mov  di, [dark_brown]
+    61 00002C41 E8D0D3              <1>     call drawRoundedRect
+    62                              <1> 
+    63                              <1>     ; --- HELP TEXT ---
+    64 00002C44 B87800              <1>     mov  ax, MENU_BUTTON_X
+    65 00002C47 83C00A              <1>     add  ax, MENU_BUTTON_WIDTH / 8
+    66 00002C4A 89C1                <1>     mov  cx, ax
+    67                              <1> 
+    68 00002C4C B85000              <1>     mov  ax, MENU_BUTTON_Y
+    69 00002C4F 83C005              <1>     add  ax, MENU_BUTTON_HEIGHT / 4
+    70 00002C52 0306[3F05]          <1>     add  ax, [DISP]
+    71 00002C56 89C2                <1>     mov  dx, ax
+    72                              <1> 
+    73 00002C58 BE[5305]            <1>     mov  si, menu_help
+    74 00002C5B 8A1E[1100]          <1>     mov  bl, [dark_brown]
+    75 00002C5F B702                <1>     mov  bh, 2
+    76 00002C61 E87CD5              <1>     call drawText
+    77                              <1> 
+    78 00002C64 E84200              <1>     call updatePadding
+    79                              <1> 
+    80                              <1>     ; ------------------------------------------------------------
+    81                              <1>     ; EXIT BUTTON
+    82                              <1>     ; ------------------------------------------------------------
+    83 00002C67 B87100              <1>     mov  ax, MENU_BUTTON_X - 7
+    84 00002C6A BB4E00              <1>     mov  bx, MENU_BUTTON_Y - 2
+    85 00002C6D 031E[3F05]          <1>     add  bx, [DISP]
+    86 00002C71 B96400              <1>     mov  cx, MENU_BUTTON_WIDTH + 15
+    87 00002C74 BA1B00              <1>     mov  dx, MENU_BUTTON_HEIGHT + 4
+    88 00002C77 8B36[0800]          <1>     mov  si, [dark_orange]
+    89 00002C7B 8B3E[1100]          <1>     mov  di, [dark_brown]
+    90 00002C7F E892D3              <1>     call drawRoundedRect
+    91                              <1> 
+    92                              <1>     ; --- EXIT TEXT ---
+    93 00002C82 B87800              <1>     mov  ax, MENU_BUTTON_X
+    94 00002C85 83C00A              <1>     add  ax, MENU_BUTTON_WIDTH / 8
+    95 00002C88 89C1                <1>     mov  cx, ax
+    96                              <1> 
+    97 00002C8A B85000              <1>     mov  ax, MENU_BUTTON_Y
+    98 00002C8D 83C005              <1>     add  ax, MENU_BUTTON_HEIGHT / 4
+    99 00002C90 0306[3F05]          <1>     add  ax, [DISP]
+   100 00002C94 89C2                <1>     mov  dx, ax
+   101                              <1> 
+   102 00002C96 BE[5805]            <1>     mov  si, menu_exit
+   103 00002C99 8A1E[1100]          <1>     mov  bl, [dark_brown]
+   104 00002C9D B702                <1>     mov  bh, 2
+   105 00002C9F E83ED5              <1>     call drawText
+   106                              <1> 
+   107                              <1>     ; ------------------------------------------------------------
+   108                              <1>     ; CLEANUP
+   109                              <1>     ; ------------------------------------------------------------
+   110 00002CA2 5F                  <1>     pop  di
+   111 00002CA3 5E                  <1>     pop  si
+   112 00002CA4 5A                  <1>     pop  dx
+   113 00002CA5 59                  <1>     pop  cx
+   114 00002CA6 5B                  <1>     pop  bx
+   115 00002CA7 58                  <1>     pop  ax
+   116 00002CA8 C3                  <1>     ret
+   117                              <1> 
+   118                              <1> ; ------------------------------------------------------------
+   119                              <1> ; UPDATE PADDING
+   120                              <1> ; ------------------------------------------------------------
+   121                              <1> updatePadding:
+   122 00002CA9 A1[3F05]            <1>     mov  ax, [DISP]
+   123 00002CAC 83C017              <1>     add  ax, MENU_BUTTON_HEIGHT
+   124 00002CAF 83C00B              <1>     add  ax, MENU_BUTTON_HEIGHT / 2
+   125 00002CB2 A3[3F05]            <1>     mov  [DISP], ax
+   126 00002CB5 C3                  <1>     ret
+    15                                  %include "Code\main_game_screen.asm"
+     1                              <1> ; ------------------------------------------------------------
+     2                              <1> ; PUBLIC: drawGameUI
+     3                              <1> ; ------------------------------------------------------------
+     4                              <1> showMainGameScreen:
+     5 00002CB6 50                  <1>     push ax
+     6 00002CB7 53                  <1>     push bx
+     7 00002CB8 51                  <1>     push cx
+     8 00002CB9 52                  <1>     push dx
+     9 00002CBA 56                  <1>     push si
+    10 00002CBB 57                  <1>     push di
+    11 00002CBC 06                  <1>     push es
+    12                              <1> 
+    13 00002CBD E81400              <1>     call drawScorePanel
+    14 00002CC0 E84700              <1>     call drawTimerPanel
+    15 00002CC3 E87A00              <1>     call drawSoundButton
+    16 00002CC6 E89C00              <1>     call drawPauseButton
+    17 00002CC9 E84302              <1>     call drawSampleBalloons
+    18                              <1> 
+    19 00002CCC 07                  <1>     pop es
+    20 00002CCD 5F                  <1>     pop di
+    21 00002CCE 5E                  <1>     pop si
+    22 00002CCF 5A                  <1>     pop dx
+    23 00002CD0 59                  <1>     pop cx
+    24 00002CD1 5B                  <1>     pop bx
+    25 00002CD2 58                  <1>     pop ax
+    26 00002CD3 C3                  <1>     ret
+    27                              <1> 
+    28                              <1> ; ------------------------------------------------------------
+    29                              <1> ; drawScorePanel
+    30                              <1> ; ------------------------------------------------------------
+    31                              <1> drawScorePanel:
+    32 00002CD4 50                  <1>     push ax
+    33 00002CD5 53                  <1>     push bx
+    34 00002CD6 51                  <1>     push cx
+    35 00002CD7 52                  <1>     push dx
+    36 00002CD8 56                  <1>     push si
+    37 00002CD9 57                  <1>     push di
+    38                              <1> 
+    39 00002CDA B86300              <1>     mov ax, SCORE_PANEL_X
+    40 00002CDD BB0400              <1>     mov bx, SCORE_PANEL_Y
+    41 00002CE0 B95A00              <1>     mov cx, SCORE_PANEL_WIDTH
+    42 00002CE3 BA1400              <1>     mov dx, SCORE_PANEL_HEIGHT
+    43 00002CE6 8B36[0700]          <1>     mov si, SCORE_PANEL_COLOR
+    44 00002CEA 8B3E[0800]          <1>     mov di, SCORE_BORDER_COLOR
+    45 00002CEE E823D3              <1>     call drawRoundedRect
+    46                              <1> 
+    47 00002CF1 B96A00              <1>     mov cx, SCORE_TEXT_X
+    48 00002CF4 BA0A00              <1>     mov dx, SCORE_TEXT_Y
+    49 00002CF7 BE[EA05]            <1>     mov si, score_label
+    50 00002CFA 8A1E[1100]          <1>     mov bl, [dark_brown]
+    51 00002CFE B701                <1>     mov bh, 1
+    52 00002D00 E8DDD4              <1>     call drawText
+    53                              <1> 
+    54                              <1>     ;mov ax, SCORE_VALUE_X
+    55                              <1>     ;mov bx, SCORE_VALUE_Y
+    56                              <1>     ;mov dx, [current_score]
+    57                              <1>     ;mov cl, [bold_leaves_green]
+    58                              <1>     ;call drawNumber
+    59                              <1> 
+    60 00002D03 5F                  <1>     pop di
+    61 00002D04 5E                  <1>     pop si
+    62 00002D05 5A                  <1>     pop dx
+    63 00002D06 59                  <1>     pop cx
+    64 00002D07 5B                  <1>     pop bx
+    65 00002D08 58                  <1>     pop ax
+    66 00002D09 C3                  <1>     ret
+    67                              <1> 
+    68                              <1> ; ------------------------------------------------------------
+    69                              <1> ; drawTimerPanel
+    70                              <1> ; ------------------------------------------------------------
+    71                              <1> drawTimerPanel:
+    72 00002D0A 50                  <1>     push ax
+    73 00002D0B 53                  <1>     push bx
+    74 00002D0C 51                  <1>     push cx
+    75 00002D0D 52                  <1>     push dx
+    76 00002D0E 56                  <1>     push si
+    77 00002D0F 57                  <1>     push di
+    78                              <1> 
+    79 00002D10 B8D100              <1>     mov ax, TIMER_PANEL_X
+    80 00002D13 BB0400              <1>     mov bx, TIMER_PANEL_Y
+    81 00002D16 B96900              <1>     mov cx, TIMER_PANEL_WIDTH
+    82 00002D19 BA1400              <1>     mov dx, TIMER_PANEL_HEIGHT
+    83 00002D1C 8B36[0700]          <1>     mov si, TIMER_PANEL_COLOR
+    84 00002D20 8B3E[0800]          <1>     mov di, TIMER_BORDER_COLOR
+    85 00002D24 E8EDD2              <1>     call drawRoundedRect
+    86                              <1> 
+    87 00002D27 B9D900              <1>     mov cx, TIMER_TEXT_X
+    88 00002D2A BA0A00              <1>     mov dx, TIMER_TEXT_Y
+    89 00002D2D BE[F405]            <1>     mov si, timer_label
+    90 00002D30 8A1E[1100]          <1>     mov bl, [dark_brown]
+    91 00002D34 B701                <1>     mov bh, 1
+    92 00002D36 E8A7D4              <1>     call drawText
+    93                              <1> 
+    94                              <1>     ;mov ax, TIMER_VALUE_X
+    95                              <1>     ;mov bx, TIMER_VALUE_Y
+    96                              <1>     ;call drawTimerValue
+    97                              <1> 
+    98 00002D39 5F                  <1>     pop di
+    99 00002D3A 5E                  <1>     pop si
+   100 00002D3B 5A                  <1>     pop dx
+   101 00002D3C 59                  <1>     pop cx
+   102 00002D3D 5B                  <1>     pop bx
+   103 00002D3E 58                  <1>     pop ax
+   104 00002D3F C3                  <1>     ret
+   105                              <1> 
+   106                              <1> ; ------------------------------------------------------------
+   107                              <1> ; drawSoundButton
+   108                              <1> ; ------------------------------------------------------------
+   109                              <1> drawSoundButton:
+   110 00002D40 50                  <1>     push ax
+   111 00002D41 53                  <1>     push bx
+   112 00002D42 51                  <1>     push cx
+   113 00002D43 52                  <1>     push dx
+   114                              <1> 
+   115 00002D44 B81100              <1>     mov ax, SOUND_BTN_X
+   116 00002D47 BB0D00              <1>     mov bx, SOUND_BTN_Y
+   117 00002D4A B90A00              <1>     mov cx, SOUND_BTN_RADIUS
+   118 00002D4D 8A16[0700]          <1>     mov dl, SOUND_BTN_COLOR
+   119 00002D51 E8BDD6              <1>     call drawCircleFilled
+   120                              <1> 
+   121 00002D54 B81100              <1>     mov ax, SOUND_BTN_X
+   122 00002D57 BB0D00              <1>     mov bx, SOUND_BTN_Y
+   123 00002D5A 83C002              <1>     add ax, 2
+   124 00002D5D E8B000              <1>     call drawSpeakerIcon
+   125                              <1> 
+   126 00002D60 5A                  <1>     pop dx
+   127 00002D61 59                  <1>     pop cx
+   128 00002D62 5B                  <1>     pop bx
+   129 00002D63 58                  <1>     pop ax
+   130 00002D64 C3                  <1>     ret
+   131                              <1> 
+   132                              <1> 
+   133                              <1> ; ------------------------------------------------------------
+   134                              <1> ; drawPauseButton
+   135                              <1> ; ------------------------------------------------------------
+   136                              <1> drawPauseButton:
+   137 00002D65 50                  <1>     push ax
+   138 00002D66 53                  <1>     push bx
+   139 00002D67 51                  <1>     push cx
+   140 00002D68 52                  <1>     push dx
+   141                              <1> 
+   142 00002D69 B82C00              <1>     mov ax, PAUSE_BTN_X
+   143 00002D6C BB0D00              <1>     mov bx, PAUSE_BTN_Y
+   144 00002D6F B90A00              <1>     mov cx, PAUSE_BTN_RADIUS
+   145 00002D72 8A16[0700]          <1>     mov dl, PAUSE_BTN_COLOR
+   146 00002D76 E898D6              <1>     call drawCircleFilled
+   147                              <1> 
+   148 00002D79 B82C00              <1>     mov ax, PAUSE_BTN_X
+   149 00002D7C BB0D00              <1>     mov bx, PAUSE_BTN_Y
+   150 00002D7F 83C002              <1>     add ax, 2
+   151 00002D82 E8BC00              <1>     call drawPauseIcon
+   152                              <1> 
+   153 00002D85 5A                  <1>     pop dx
+   154 00002D86 59                  <1>     pop cx
+   155 00002D87 5B                  <1>     pop bx
+   156 00002D88 58                  <1>     pop ax
+   157 00002D89 C3                  <1>     ret
+   158                              <1> 
+   159                              <1> ; ------------------------------------------------------------
+   160                              <1> ; drawTimerValue
+   161                              <1> ; ------------------------------------------------------------
+   162                              <1> drawTimerValue:
+   163 00002D8A 50                  <1>     push ax
+   164 00002D8B 53                  <1>     push bx
+   165 00002D8C 51                  <1>     push cx
+   166 00002D8D 52                  <1>     push dx
+   167 00002D8E 56                  <1>     push si
+   168                              <1> 
+   169 00002D8F 89C6                <1>     mov si, ax
+   170                              <1>     
+   171 00002D91 A0[E605]            <1>     mov al, [current_minutes]
+   172 00002D94 30E4                <1>     xor ah, ah
+   173 00002D96 8A16[0C00]          <1>     mov dl, [bold_leaves_green]
+   174                              <1>     ;call drawDigit
+   175                              <1>     
+   176 00002D9A 83C608              <1>     add si, 8
+   177 00002D9D 89F0                <1>     mov ax, si
+   178 00002D9F A0[E605]            <1>     mov al, [current_minutes]
+   179 00002DA2 30E4                <1>     xor ah, ah
+   180 00002DA4 B10A                <1>     mov cl, 10
+   181 00002DA6 30E4                <1>     xor ah, ah
+   182 00002DA8 F6F1                <1>     div cl
+   183 00002DAA 88E0                <1>     mov al, ah
+   184 00002DAC 8A16[0C00]          <1>     mov dl, [bold_leaves_green]
+   185                              <1>     ;call drawDigit
+   186                              <1>     
+   187 00002DB0 83C608              <1>     add si, 8
+   188 00002DB3 89F0                <1>     mov ax, si
+   189 00002DB5 83C002              <1>     add ax, 2
+   190 00002DB8 83C302              <1>     add bx, 2
+   191 00002DBB B90200              <1>     mov cx, 2
+   192 00002DBE BA0200              <1>     mov dx, 2
+   193 00002DC1 56                  <1>     push si
+   194 00002DC2 8B36[0C00]          <1>     mov si, [bold_leaves_green]
+   195 00002DC6 E8D0D2              <1>     call drawFilledRect
+   196 00002DC9 5E                  <1>     pop si
+   197 00002DCA 83C303              <1>     add bx, 3
+   198 00002DCD 89F0                <1>     mov ax, si
+   199 00002DCF 83C002              <1>     add ax, 2
+   200 00002DD2 B90200              <1>     mov cx, 2
+   201 00002DD5 BA0200              <1>     mov dx, 2
+   202 00002DD8 56                  <1>     push si
+   203 00002DD9 8B36[0C00]          <1>     mov si, [bold_leaves_green]
+   204 00002DDD E8B9D2              <1>     call drawFilledRect
+   205 00002DE0 5E                  <1>     pop si
+   206 00002DE1 83EB05              <1>     sub bx, 5
+   207                              <1>     
+   208 00002DE4 83C60A              <1>     add si, 10
+   209 00002DE7 89F0                <1>     mov ax, si
+   210 00002DE9 A0[E705]            <1>     mov al, [current_seconds]
+   211 00002DEC 30E4                <1>     xor ah, ah
+   212 00002DEE B10A                <1>     mov cl, 10
+   213 00002DF0 F6F1                <1>     div cl
+   214 00002DF2 8A16[0C00]          <1>     mov dl, [bold_leaves_green]
+   215                              <1>     ;call drawDigit
+   216                              <1>     
+   217 00002DF6 83C608              <1>     add si, 8
+   218 00002DF9 89F0                <1>     mov ax, si
+   219 00002DFB A0[E705]            <1>     mov al, [current_seconds]
+   220 00002DFE 30E4                <1>     xor ah, ah
+   221 00002E00 B10A                <1>     mov cl, 10
+   222 00002E02 F6F1                <1>     div cl
+   223 00002E04 88E0                <1>     mov al, ah
+   224 00002E06 8A16[0400]          <1>     mov dl, [white]
+   225                              <1>     ;call drawDigit
+   226                              <1> 
+   227 00002E0A 5E                  <1>     pop si
+   228 00002E0B 5A                  <1>     pop dx
+   229 00002E0C 59                  <1>     pop cx
+   230 00002E0D 5B                  <1>     pop bx
+   231 00002E0E 58                  <1>     pop ax
+   232 00002E0F C3                  <1>     ret
+   233                              <1> 
+   234                              <1> ; ------------------------------------------------------------
+   235                              <1> ; drawSpeakerIcon
+   236                              <1> ; ------------------------------------------------------------
+   237                              <1> drawSpeakerIcon:
+   238 00002E10 50                  <1>     push ax
+   239 00002E11 53                  <1>     push bx
+   240 00002E12 51                  <1>     push cx
+   241 00002E13 52                  <1>     push dx
+   242 00002E14 56                  <1>     push si
+   243                              <1> 
+   244 00002E15 83E806              <1>     sub ax, 6
+   245 00002E18 83EB04              <1>     sub bx, 4
+   246 00002E1B B90500              <1>     mov cx, 5
+   247 00002E1E BA0800              <1>     mov dx, 8
+   248 00002E21 8B36[1100]          <1>     mov si, PAUSE_BTN_BORDER
+   249 00002E25 E871D2              <1>     call drawFilledRect
+   250                              <1>     
+   251 00002E28 83C008              <1>     add ax, 8
+   252 00002E2B 83C302              <1>     add bx, 2
+   253 00002E2E B90200              <1>     mov cx, 2
+   254 00002E31 BA0400              <1>     mov dx, 4
+   255 00002E34 8B36[1100]          <1>     mov si, PAUSE_BTN_BORDER
+   256 00002E38 E85ED2              <1>     call drawFilledRect
+   257                              <1> 
+   258 00002E3B 5E                  <1>     pop si
+   259 00002E3C 5A                  <1>     pop dx
+   260 00002E3D 59                  <1>     pop cx
+   261 00002E3E 5B                  <1>     pop bx
+   262 00002E3F 58                  <1>     pop ax
+   263 00002E40 C3                  <1>     ret
+   264                              <1> 
+   265                              <1> ; ------------------------------------------------------------
+   266                              <1> ; drawPauseIcon
+   267                              <1> ; ------------------------------------------------------------
+   268                              <1> drawPauseIcon:
+   269 00002E41 50                  <1>     push ax
+   270 00002E42 53                  <1>     push bx
+   271 00002E43 51                  <1>     push cx
+   272 00002E44 52                  <1>     push dx
+   273 00002E45 56                  <1>     push si
+   274                              <1> 
+   275 00002E46 83E806              <1>     sub ax, 6
+   276 00002E49 83EB06              <1>     sub bx, 6
+   277 00002E4C B90300              <1>     mov cx, 3
+   278 00002E4F BA0C00              <1>     mov dx, 12
+   279 00002E52 8B36[1100]          <1>     mov si, PAUSE_BTN_BORDER
+   280 00002E56 E840D2              <1>     call drawFilledRect
+   281                              <1>     
+   282 00002E59 83C006              <1>     add ax, 6
+   283 00002E5C B90300              <1>     mov cx, 3
+   284 00002E5F BA0C00              <1>     mov dx, 12
+   285 00002E62 8B36[1100]          <1>     mov si, PAUSE_BTN_BORDER
+   286 00002E66 E830D2              <1>     call drawFilledRect
+   287                              <1> 
+   288 00002E69 5E                  <1>     pop si
+   289 00002E6A 5A                  <1>     pop dx
+   290 00002E6B 59                  <1>     pop cx
+   291 00002E6C 5B                  <1>     pop bx
+   292 00002E6D 58                  <1>     pop ax
+   293 00002E6E C3                  <1>     ret
+   294                              <1> 
+   295                              <1> ; ------------------------------------------------------------
+   296                              <1> ; drawBalloon
+   297                              <1> ; ------------------------------------------------------------
+   298                              <1> drawBalloon:
+   299 00002E6F 50                  <1>     push ax
+   300 00002E70 53                  <1>     push bx
+   301 00002E71 51                  <1>     push cx
+   302 00002E72 52                  <1>     push dx
+   303 00002E73 56                  <1>     push si
+   304 00002E74 57                  <1>     push di
+   305 00002E75 55                  <1>     push bp
+   306                              <1> 
+   307 00002E76 89E5                <1>     mov bp, sp
+   308 00002E78 83EC08              <1>     sub sp, 8
+   309 00002E7B 8946FE              <1>     mov [bp-2], ax
+   310 00002E7E 895EFC              <1>     mov [bp-4], bx
+   311 00002E81 884EFA              <1>     mov [bp-6], cl
+   312 00002E84 8856F8              <1>     mov [bp-8], dl
+   313                              <1> 
+   314 00002E87 8B46FE              <1>     mov ax, [bp-2]
+   315 00002E8A 8B5EFC              <1>     mov bx, [bp-4]
+   316 00002E8D 83C30F              <1>     add bx, 15
+   317 00002E90 B90F00              <1>     mov cx, 15
+   318 00002E93 8A56FA              <1>     mov dl, byte [bp-6]
+   319 00002E96 E878D5              <1>     call drawCircleFilled
+   320                              <1> 
+   321 00002E99 8B46FE              <1>     mov ax, [bp-2]
+   322 00002E9C 8B5EFC              <1>     mov bx, [bp-4]
+   323 00002E9F 83C30F              <1>     add bx, 15
+   324 00002EA2 B90F00              <1>     mov cx, 15
+   325 00002EA5 8A16[0C00]          <1>     mov dl, [bold_leaves_green]
+   326 00002EA9 E86BD4              <1>     call drawCircleOutline
+   327                              <1> 
+   328 00002EAC 8B46FE              <1>     mov ax, [bp-2]
+   329 00002EAF 8B5EFC              <1>     mov bx, [bp-4]
+   330 00002EB2 83C31E              <1>     add bx, 30
+   331 00002EB5 B90300              <1>     mov cx, 3
+   332 00002EB8 BA0200              <1>     mov dx, 2
+   333 00002EBB 8B76FA              <1>     mov si, [bp-6]
+   334 00002EBE E8D8D1              <1>     call drawFilledRect
+   335                              <1> 
+   336 00002EC1 8B46FE              <1>     mov ax, [bp-2]
+   337 00002EC4 8B5EFC              <1>     mov bx, [bp-4]
+   338 00002EC7 83C320              <1>     add bx, 32
+   339 00002ECA BA1200              <1>     mov dx, BALLOON_STRING_LEN
+   340 00002ECD 8B36[0C00]          <1>     mov si, [bold_leaves_green]
+   341 00002ED1 E896D2              <1>     call drawVerticalLine
+   342                              <1> 
+   343 00002ED4 8B46FE              <1>     mov ax, [bp-2]
+   344 00002ED7 83E804              <1>     sub ax, 4
+   345 00002EDA 8B5EFC              <1>     mov bx, [bp-4]
+   346 00002EDD 83C30C              <1>     add bx, 12
+   347 00002EE0 8A46F8              <1>     mov al, byte [bp-8]
+   348 00002EE3 3C30                <1>     cmp al, '0'
+   349 00002EE5 720C                <1>     jb .draw_as_char
+   350 00002EE7 3C39                <1>     cmp al, '9'
+   351 00002EE9 7708                <1>     ja .draw_as_char
+   352                              <1>     
+   353 00002EEB 2C30                <1>     sub al, '0'
+   354 00002EED 8A16[0C00]          <1>     mov dl, [bold_leaves_green]
+   355                              <1>     ;call drawDigit
+   356 00002EF1 EB11                <1>     jmp .done
+   357                              <1> 
+   358                              <1> .draw_as_char:
+   359 00002EF3 8B4EFE              <1>     mov cx, [bp-2]
+   360 00002EF6 8B56FC              <1>     mov dx, [bp-4]
+   361 00002EF9 B701                <1>     mov bh, 1
+   362 00002EFB 8A5EFA              <1>     mov bl, [bp-6]
+   363 00002EFE 8B76F8              <1>     mov si, [bp-8]
+   364 00002F01 E8DCD2              <1>     call drawText
+   365                              <1> 
+   366                              <1> .done:
+   367 00002F04 83C408              <1>     add sp, 8
+   368 00002F07 5D                  <1>     pop bp
+   369 00002F08 5F                  <1>     pop di
+   370 00002F09 5E                  <1>     pop si
+   371 00002F0A 5A                  <1>     pop dx
+   372 00002F0B 59                  <1>     pop cx
+   373 00002F0C 5B                  <1>     pop bx
+   374 00002F0D 58                  <1>     pop ax
+   375 00002F0E C3                  <1>     ret
+   376                              <1> 
+   377                              <1> ; ------------------------------------------------------------
+   378                              <1> ; drawSampleBalloons
+   379                              <1> ; ------------------------------------------------------------
+   380                              <1> drawSampleBalloons:
+   381 00002F0F 50                  <1>     push ax
+   382 00002F10 53                  <1>     push bx
+   383 00002F11 51                  <1>     push cx
+   384 00002F12 52                  <1>     push dx
+   385                              <1> 
+   386 00002F13 B85000              <1>     mov ax, 80
+   387 00002F16 BB6400              <1>     mov bx, 100
+   388 00002F19 8A0E[0400]          <1>     mov cl, [white]
+   389 00002F1D B231                <1>     mov dl, '1'
+   390 00002F1F E84DFF              <1>     call drawBalloon
+   391                              <1> 
+   392 00002F22 B88200              <1>     mov ax, 130
+   393 00002F25 BB8C00              <1>     mov bx, 140
+   394 00002F28 8A0E[0F00]          <1>     mov cl, [light_blue]
+   395 00002F2C B232                <1>     mov dl, '2'
+   396 00002F2E E83EFF              <1>     call drawBalloon
+   397                              <1> 
+   398 00002F31 B8C800              <1>     mov ax, 200
+   399 00002F34 BB4600              <1>     mov bx, 70
+   400 00002F37 8A0E[0A00]          <1>     mov cl, [bright_cyan]
+   401 00002F3B B233                <1>     mov dl, '3'
+   402 00002F3D E82FFF              <1>     call drawBalloon
+   403                              <1> 
+   404 00002F40 B80401              <1>     mov ax, 260
+   405 00002F43 BB6E00              <1>     mov bx, 110
+   406 00002F46 8A0E[0500]          <1>     mov cl, [bright_yellow]
+   407 00002F4A B234                <1>     mov dl, '4'
+   408 00002F4C E820FF              <1>     call drawBalloon
+   409                              <1> 
+   410 00002F4F 5A                  <1>     pop dx
+   411 00002F50 59                  <1>     pop cx
+   412 00002F51 5B                  <1>     pop bx
+   413 00002F52 58                  <1>     pop ax
+   414 00002F53 C3                  <1>     ret
+   415                              <1> 
+   416                              <1> ; ============================================================
+   417                              <1> ; END OF main_game_screen.asm
+   418                              <1> ; ============================================================
+    16                                  %include "Code\pause_screen.asm"
+     1                              <1> ; ------------------------------------------------------------
+     2                              <1> ; PUBLIC: showPauseScreen
+     3                              <1> ; Main entry point - displays pause overlay and handles input
+     4                              <1> ; ------------------------------------------------------------
+     5                              <1> showPauseScreen:
+     6 00002F54 50                  <1>     push ax
+     7 00002F55 53                  <1>     push bx
+     8 00002F56 51                  <1>     push cx
+     9 00002F57 52                  <1>     push dx
+    10 00002F58 56                  <1>     push si
+    11 00002F59 57                  <1>     push di
+    12 00002F5A 1E                  <1>     push ds
+    13                              <1> 
+    14                              <1>     ; Ensure DS = CS for data access
+    15 00002F5B 0E                  <1>     push cs
+    16 00002F5C 1F                  <1>     pop ds
+    17                              <1> 
+    18                              <1> .pause_loop:
+    19                              <1>     ; Draw complete pause screen
+    20 00002F5D E81100              <1>     call drawPausePanel
+    21 00002F60 E82E00              <1>     call drawPauseTitle
+    22 00002F63 E84A00              <1>     call drawPauseMenu
+    23                              <1> 
+    24                              <1>     ; Small delay for animation smoothness
+    25 00002F66 E8A5D3              <1>     call screenDelay
+    26                              <1> 
+    27 00002F69 1F                  <1>     pop ds
+    28 00002F6A 5F                  <1>     pop di
+    29 00002F6B 5E                  <1>     pop si
+    30 00002F6C 5A                  <1>     pop dx
+    31 00002F6D 59                  <1>     pop cx
+    32 00002F6E 5B                  <1>     pop bx
+    33 00002F6F 58                  <1>     pop ax
+    34 00002F70 C3                  <1>     ret
+    35                              <1> 
+    36                              <1> ; ------------------------------------------------------------
+    37                              <1> ; drawPausePanel
+    38                              <1> ; Draws main pause panel with rounded corners
+    39                              <1> ; USES: drawRoundedRect from ui.asm
+    40                              <1> ; ------------------------------------------------------------
+    41                              <1> drawPausePanel:
+    42 00002F71 50                  <1>     push ax
+    43 00002F72 53                  <1>     push bx
+    44 00002F73 51                  <1>     push cx
+    45 00002F74 52                  <1>     push dx
+    46 00002F75 56                  <1>     push si
+    47 00002F76 57                  <1>     push di
+    48                              <1> 
+    49                              <1>     ; Main panel body
+    50 00002F77 B84600              <1>     mov ax, PAUSE_PANEL_X
+    51 00002F7A BB1E00              <1>     mov bx, PAUSE_PANEL_Y
+    52 00002F7D B9B400              <1>     mov cx, PAUSE_PANEL_WIDTH
+    53 00002F80 BA8C00              <1>     mov dx, PAUSE_PANEL_HEIGHT
+    54 00002F83 8B36[0700]          <1>     mov si, PAUSE_PANEL_COLOR
+    55 00002F87 E88AD0              <1>     call drawRoundedRect
+    56                              <1> 
+    57 00002F8A 5F                  <1>     pop di
+    58 00002F8B 5E                  <1>     pop si
+    59 00002F8C 5A                  <1>     pop dx
+    60 00002F8D 59                  <1>     pop cx
+    61 00002F8E 5B                  <1>     pop bx
+    62 00002F8F 58                  <1>     pop ax
+    63 00002F90 C3                  <1>     ret
+    64                              <1> 
+    65                              <1> ; ------------------------------------------------------------
+    66                              <1> ; drawPauseTitle
+    67                              <1> ; Draws pulsing "GAME PAUSED" title
+    68                              <1> ; CALLS: drawTextCentered
+    69                              <1> ; ------------------------------------------------------------
+    70                              <1> drawPauseTitle:
+    71 00002F91 50                  <1>     push ax
+    72 00002F92 53                  <1>     push bx
+    73 00002F93 51                  <1>     push cx
+    74 00002F94 52                  <1>     push dx
+    75 00002F95 56                  <1>     push si
+    76 00002F96 57                  <1>     push di
+    77                              <1> 
+    78 00002F97 B96E00              <1>     mov  cx, 110
+    79 00002F9A BA3200              <1>     mov  dx, 50
+    80 00002F9D BE[7D05]            <1>     mov  si, pause_title              ; DS:SI -> title string
+    81 00002FA0 8A1E[1100]          <1>     mov  bl, PAUSE_TITLE_COLOR     ; color
+    82 00002FA4 B702                <1>     mov  bh, 2
+    83 00002FA6 E837D2              <1>     call drawText
+    84                              <1> 
+    85 00002FA9 5F                  <1>     pop di
+    86 00002FAA 5E                  <1>     pop si
+    87 00002FAB 5A                  <1>     pop dx
+    88 00002FAC 59                  <1>     pop cx
+    89 00002FAD 5B                  <1>     pop bx
+    90 00002FAE 58                  <1>     pop ax
+    91 00002FAF C3                  <1>     ret
+    92                              <1> 
+    93                              <1> ; ============================================================
+    94                              <1> ; END OF pause_screen.asm
+    95                              <1> ; ============================================================
+    96                              <1> 
+    97                              <1> drawPauseMenu:
+    98 00002FB0 50                  <1>     push ax
+    99 00002FB1 53                  <1>     push bx
+   100 00002FB2 51                  <1>     push cx
+   101 00002FB3 52                  <1>     push dx
+   102 00002FB4 56                  <1>     push si
+   103 00002FB5 57                  <1>     push di
+   104                              <1> 
+   105 00002FB6 B86400              <1>     mov  ax, PAUSE_MENU_BUTTON_X
+   106 00002FB9 BB4C00              <1>     mov  bx, PAUSE_MENU_BUTTON_Y
+   107 00002FBC 031E[9B05]          <1>     add  bx, [DIST]
+   108 00002FC0 B97800              <1>     mov  cx, PAUSE_MENU_BUTTON_WIDTH
+   109 00002FC3 BA1400              <1>     mov  dx, PAUSE_MENU_BUTTON_HEIGHT
+   110 00002FC6 8B36[1100]          <1>     mov  si, [dark_brown]
+   111 00002FCA E847D0              <1>     call drawRoundedRect
+   112                              <1> 
+   113                              <1>     ; --- RESUME TEXT ---
+   114 00002FCD B86400              <1>     mov  ax, PAUSE_MENU_BUTTON_X
+   115 00002FD0 83C00F              <1>     add  ax, PAUSE_MENU_BUTTON_WIDTH / 8
+   116 00002FD3 89C1                <1>     mov  cx, ax
+   117                              <1> 
+   118 00002FD5 B84D00              <1>     mov  ax, PAUSE_MENU_BUTTON_Y + 1
+   119 00002FD8 83C005              <1>     add  ax, PAUSE_MENU_BUTTON_HEIGHT / 4
+   120 00002FDB 0306[9B05]          <1>     add  ax, [DIST]
+   121 00002FDF 89C2                <1>     mov  dx, ax
+   122                              <1> 
+   123 00002FE1 BE[8405]            <1>     mov  si, menu_resume
+   124 00002FE4 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   125 00002FE8 B701                <1>     mov  bh, 1
+   126 00002FEA E8F3D1              <1>     call drawText
+   127                              <1> 
+   128 00002FED E87900              <1>     call updatePadd
+   129                              <1> 
+   130                              <1>     ; ------------------------------------------------------------
+   131                              <1>     ; RESTART BUTTON
+   132                              <1>     ; ------------------------------------------------------------
+   133 00002FF0 B86400              <1>     mov  ax, PAUSE_MENU_BUTTON_X
+   134 00002FF3 BB4C00              <1>     mov  bx, PAUSE_MENU_BUTTON_Y
+   135 00002FF6 031E[9B05]          <1>     add  bx, [DIST]
+   136 00002FFA B97800              <1>     mov  cx, PAUSE_MENU_BUTTON_WIDTH
+   137 00002FFD BA1400              <1>     mov  dx, PAUSE_MENU_BUTTON_HEIGHT
+   138 00003000 8B36[1100]          <1>     mov  si, [dark_brown]
+   139 00003004 E80DD0              <1>     call drawRoundedRect
+   140                              <1> 
+   141                              <1>     ; --- RESTART TEXT ---
+   142 00003007 B86500              <1>     mov  ax, PAUSE_MENU_BUTTON_X + 1
+   143 0000300A 83C00F              <1>     add  ax, PAUSE_MENU_BUTTON_WIDTH / 8
+   144 0000300D 89C1                <1>     mov  cx, ax
+   145                              <1> 
+   146 0000300F B84D00              <1>     mov  ax, PAUSE_MENU_BUTTON_Y + 1
+   147 00003012 83C005              <1>     add  ax, PAUSE_MENU_BUTTON_HEIGHT / 4
+   148 00003015 0306[9B05]          <1>     add  ax, [DIST]
+   149 00003019 89C2                <1>     mov  dx, ax
+   150                              <1> 
+   151 0000301B BE[9005]            <1>     mov  si, menu_restart
+   152 0000301E 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   153 00003022 B701                <1>     mov  bh, 1
+   154 00003024 E8B9D1              <1>     call drawText
+   155                              <1> 
+   156 00003027 E83F00              <1>     call updatePadd
+   157                              <1> 
+   158                              <1>     ; ------------------------------------------------------------
+   159                              <1>     ; QUIT BUTTON
+   160                              <1>     ; ------------------------------------------------------------
+   161 0000302A B86400              <1>     mov  ax, PAUSE_MENU_BUTTON_X
+   162 0000302D BB4C00              <1>     mov  bx, PAUSE_MENU_BUTTON_Y
+   163 00003030 031E[9B05]          <1>     add  bx, [DIST]
+   164 00003034 B97800              <1>     mov  cx, PAUSE_MENU_BUTTON_WIDTH
+   165 00003037 BA1400              <1>     mov  dx, PAUSE_MENU_BUTTON_HEIGHT
+   166 0000303A 8B36[1100]          <1>     mov  si, [dark_brown]
+   167 0000303E E8D3CF              <1>     call drawRoundedRect
+   168                              <1> 
+   169                              <1>     ; --- QUIT TEXT ---
+   170 00003041 B86400              <1>     mov  ax, PAUSE_MENU_BUTTON_X
+   171 00003044 83C00F              <1>     add  ax, PAUSE_MENU_BUTTON_WIDTH / 8
+   172 00003047 89C1                <1>     mov  cx, ax
+   173                              <1> 
+   174 00003049 B84D00              <1>     mov  ax, PAUSE_MENU_BUTTON_Y + 1
+   175 0000304C 83C005              <1>     add  ax, PAUSE_MENU_BUTTON_HEIGHT / 4
+   176 0000304F 0306[9B05]          <1>     add  ax, [DIST]
+   177 00003053 89C2                <1>     mov  dx, ax
+   178                              <1> 
+   179 00003055 BE[D005]            <1>     mov  si, menu_quit
+   180 00003058 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   181 0000305C B701                <1>     mov  bh, 1
+   182 0000305E E87FD1              <1>     call drawText
+   183                              <1> 
+   184 00003061 1F                  <1>     pop ds
+   185 00003062 5F                  <1>     pop di
+   186 00003063 5E                  <1>     pop si
+   187 00003064 5A                  <1>     pop dx
+   188 00003065 59                  <1>     pop cx
+   189 00003066 5B                  <1>     pop bx
+   190 00003067 58                  <1>     pop ax
+   191 00003068 C3                  <1>     ret
+   192                              <1> 
+   193                              <1> ; ------------------------------------------------------------
+   194                              <1> ; UPDATE PADDING
+   195                              <1> ; ------------------------------------------------------------
+   196                              <1> updatePadd:
+   197 00003069 A1[9B05]            <1>     mov  ax, [DIST]
+   198 0000306C 83C014              <1>     add  ax, PAUSE_MENU_BUTTON_HEIGHT
+   199 0000306F 83C00A              <1>     add  ax, PAUSE_MENU_BUTTON_HEIGHT / 2
+   200 00003072 A3[9B05]            <1>     mov  [DIST], ax
+   201 00003075 C3                  <1>     ret
+    17                                  %include "Code\game_over_screen.asm"
+     1                              <1> ; ------------------------------------------------------------
+     2                              <1> ; PUBLIC: showPauseScreen
+     3                              <1> ; Main entry point - displays pause overlay and handles input
+     4                              <1> ; ------------------------------------------------------------
+     5                              <1> showGameOverScreen:
+     6 00003076 50                  <1>     push ax
+     7 00003077 53                  <1>     push bx
+     8 00003078 51                  <1>     push cx
+     9 00003079 52                  <1>     push dx
+    10 0000307A 56                  <1>     push si
+    11 0000307B 57                  <1>     push di
+    12 0000307C 1E                  <1>     push ds
+    13                              <1> 
+    14                              <1>     ; Ensure DS = CS for data access
+    15 0000307D 0E                  <1>     push cs
+    16 0000307E 1F                  <1>     pop ds
+    17                              <1> 
+    18                              <1> .pause_loop:
+    19                              <1>     ; Draw complete pause screen
+    20 0000307F E81400              <1>     call drawGameOverPanel
+    21 00003082 E85000              <1>     call drawGameOverStats
+    22 00003085 E82E00              <1>     call drawGameOverTitle
+    23 00003088 E8CB00              <1>     call drawGameOverMenu
+    24                              <1> 
+    25                              <1>     ; Small delay for animation smoothness
+    26 0000308B E880D2              <1>     call screenDelay
+    27                              <1> 
+    28 0000308E 1F                  <1>     pop ds
+    29 0000308F 5F                  <1>     pop di
+    30 00003090 5E                  <1>     pop si
+    31 00003091 5A                  <1>     pop dx
+    32 00003092 59                  <1>     pop cx
+    33 00003093 5B                  <1>     pop bx
+    34 00003094 58                  <1>     pop ax
+    35 00003095 C3                  <1>     ret
+    36                              <1> 
+    37                              <1> ; ------------------------------------------------------------
+    38                              <1> ; drawGameOverPanel
+    39                              <1> ; Draws main pause panel with rounded corners
+    40                              <1> ; USES: drawRoundedRect from ui.asm
+    41                              <1> ; ------------------------------------------------------------
+    42                              <1> drawGameOverPanel:
+    43 00003096 50                  <1>     push ax
+    44 00003097 53                  <1>     push bx
+    45 00003098 51                  <1>     push cx
+    46 00003099 52                  <1>     push dx
+    47 0000309A 56                  <1>     push si
+    48 0000309B 57                  <1>     push di
+    49                              <1> 
+    50                              <1>     ; Main panel body
+    51 0000309C B84600              <1>     mov ax, GAMEOVER_PANEL_X
+    52 0000309F BB0F00              <1>     mov bx, GAMEOVER_PANEL_Y
+    53 000030A2 B9B400              <1>     mov cx, GAMEOVER_PANEL_WIDTH
+    54 000030A5 BAAA00              <1>     mov dx, GAMEOVER_PANEL_HEIGHT
+    55 000030A8 8B36[0700]          <1>     mov si, GAMEOVER_PANEL_COLOR
+    56 000030AC E865CF              <1>     call drawRoundedRect
+    57                              <1> 
+    58 000030AF 5F                  <1>     pop di
+    59 000030B0 5E                  <1>     pop si
+    60 000030B1 5A                  <1>     pop dx
+    61 000030B2 59                  <1>     pop cx
+    62 000030B3 5B                  <1>     pop bx
+    63 000030B4 58                  <1>     pop ax
+    64 000030B5 C3                  <1>     ret
+    65                              <1> 
+    66                              <1> 
+    67                              <1> ; ------------------------------------------------------------
+    68                              <1> ; drawGameOverTitle
+    69                              <1> ; Draws pulsing "GAME OVER" title
+    70                              <1> ; CALLS: drawTextCentered
+    71                              <1> ; ------------------------------------------------------------
+    72                              <1> drawGameOverTitle:
+    73 000030B6 50                  <1>     push ax
+    74 000030B7 53                  <1>     push bx
+    75 000030B8 51                  <1>     push cx
+    76 000030B9 52                  <1>     push dx
+    77 000030BA 56                  <1>     push si
+    78 000030BB 57                  <1>     push di
+    79                              <1> 
+    80 000030BC B95A00              <1>     mov  cx, 90
+    81 000030BF BA2000              <1>     mov  dx, 32
+    82 000030C2 BE[9D05]            <1>     mov  si, gameover_title              ; DS:SI -> title string
+    83 000030C5 8A1E[1100]          <1>     mov  bl, GAMEOVER_TITLE_COLOR     ; color
+    84 000030C9 B702                <1>     mov  bh, 2
+    85 000030CB E812D1              <1>     call drawText
+    86                              <1> 
+    87 000030CE 5F                  <1>     pop di
+    88 000030CF 5E                  <1>     pop si
+    89 000030D0 5A                  <1>     pop dx
+    90 000030D1 59                  <1>     pop cx
+    91 000030D2 5B                  <1>     pop bx
+    92 000030D3 58                  <1>     pop ax
+    93 000030D4 C3                  <1>     ret
+    94                              <1> 
+    95                              <1> ; ============================================================
+    96                              <1> ; END OF pause_screen.asm
+    97                              <1> ; ============================================================
+    98                              <1> drawGameOverStats:
+    99 000030D5 50                  <1>     push ax
+   100 000030D6 53                  <1>     push bx
+   101 000030D7 51                  <1>     push cx
+   102 000030D8 52                  <1>     push dx
+   103 000030D9 56                  <1>     push si
+   104 000030DA 57                  <1>     push di
+   105                              <1> 
+   106 000030DB B86400              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X
+   107 000030DE BB4100              <1>     mov  bx, GAMEOVER_MENU_BUTTON_Y
+   108 000030E1 031E[E205]          <1>     add  bx, [DIS]
+   109 000030E5 B97800              <1>     mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   110 000030E8 BA1400              <1>     mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   111 000030EB 8B36[1100]          <1>     mov  si, [dark_brown]
+   112 000030EF E822CF              <1>     call drawRoundedRect
+   113                              <1> 
+   114                              <1>     ; --- SCORE TEXT ---
+   115 000030F2 B86300              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X - 1
+   116 000030F5 83C011              <1>     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8 + 2
+   117 000030F8 89C1                <1>     mov  cx, ax
+   118                              <1> 
+   119 000030FA B80F00              <1>     mov  ax, GAMEOVER_PANEL_Y
+   120 000030FD 83C038              <1>     add  ax, GAMEOVER_PANEL_HEIGHT / 3
+   121 00003100 0306[E205]          <1>     add  ax, [DIS]
+   122 00003104 89C2                <1>     mov  dx, ax
+   123                              <1> 
+   124 00003106 BE[A605]            <1>     mov  si, stats_score_label
+   125 00003109 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   126 0000310D B701                <1>     mov  bh, 1
+   127 0000310F E8CED0              <1>     call drawText
+   128                              <1> 
+   129 00003112 E8C000              <1>     call updatePad
+   130                              <1> 
+   131 00003115 B86400              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X
+   132 00003118 BB4100              <1>     mov  bx, GAMEOVER_MENU_BUTTON_Y
+   133 0000311B 031E[E205]          <1>     add  bx, [DIS]
+   134 0000311F B97800              <1>     mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   135 00003122 BA1400              <1>     mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   136 00003125 8B36[1100]          <1>     mov  si, [dark_brown]
+   137 00003129 E8E8CE              <1>     call drawRoundedRect
+   138                              <1> 
+   139                              <1>     ; --- TIME TEXT ---
+   140 0000312C B86500              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X + 1
+   141 0000312F 83C00F              <1>     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
+   142 00003132 89C1                <1>     mov  cx, ax
+   143                              <1> 
+   144 00003134 B80F00              <1>     mov  ax, GAMEOVER_PANEL_Y
+   145 00003137 83C038              <1>     add  ax, GAMEOVER_PANEL_HEIGHT / 3
+   146 0000313A 0306[E205]          <1>     add  ax, [DIS]
+   147 0000313E 89C2                <1>     mov  dx, ax
+   148                              <1> 
+   149 00003140 BE[B105]            <1>     mov  si, stats_time_label
+   150 00003143 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   151 00003147 B701                <1>     mov  bh, 1
+   152 00003149 E894D0              <1>     call drawText
+   153                              <1> 
+   154 0000314C E88600              <1>     call updatePad
+   155                              <1> 
+   156 0000314F 5F                  <1>     pop di
+   157 00003150 5E                  <1>     pop si
+   158 00003151 5A                  <1>     pop dx
+   159 00003152 59                  <1>     pop cx
+   160 00003153 5B                  <1>     pop bx
+   161 00003154 58                  <1>     pop ax
+   162 00003155 C3                  <1>     ret
+   163                              <1> 
+   164                              <1> 
+   165                              <1> drawGameOverMenu:
+   166 00003156 50                  <1>     push ax
+   167 00003157 53                  <1>     push bx
+   168 00003158 51                  <1>     push cx
+   169 00003159 52                  <1>     push dx
+   170 0000315A 56                  <1>     push si
+   171 0000315B 57                  <1>     push di
+   172                              <1> 
+   173 0000315C B86400              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X
+   174 0000315F BB4100              <1>     mov  bx, GAMEOVER_MENU_BUTTON_Y
+   175 00003162 031E[E205]          <1>     add  bx, [DIS]
+   176 00003166 B97800              <1>     mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   177 00003169 BA1400              <1>     mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   178 0000316C 8B36[1100]          <1>     mov  si, [dark_brown]
+   179 00003170 E8A1CE              <1>     call drawRoundedRect
+   180                              <1> 
+   181                              <1>     ; --- RETRY TEXT ---
+   182 00003173 B86700              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X + 3
+   183 00003176 83C00F              <1>     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
+   184 00003179 89C1                <1>     mov  cx, ax
+   185                              <1> 
+   186 0000317B B84200              <1>     mov  ax, GAMEOVER_MENU_BUTTON_Y + 1
+   187 0000317E 83C005              <1>     add  ax, GAMEOVER_MENU_BUTTON_HEIGHT / 4
+   188 00003181 0306[E205]          <1>     add  ax, [DIS]
+   189 00003185 89C2                <1>     mov  dx, ax
+   190                              <1> 
+   191 00003187 BE[C605]            <1>     mov  si, menu_retry
+   192 0000318A 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   193 0000318E B701                <1>     mov  bh, 1
+   194 00003190 E84DD0              <1>     call drawText
+   195                              <1> 
+   196 00003193 E83F00              <1>     call updatePad
+   197                              <1> 
+   198                              <1>     ; ------------------------------------------------------------
+   199                              <1>     ; QUIT BUTTON
+   200                              <1>     ; ------------------------------------------------------------
+   201 00003196 B86400              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X
+   202 00003199 BB4100              <1>     mov  bx, GAMEOVER_MENU_BUTTON_Y
+   203 0000319C 031E[E205]          <1>     add  bx, [DIS]
+   204 000031A0 B97800              <1>     mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   205 000031A3 BA1400              <1>     mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   206 000031A6 8B36[1100]          <1>     mov  si, [dark_brown]
+   207 000031AA E867CE              <1>     call drawRoundedRect
+   208                              <1> 
+   209                              <1>     ; --- QUIT TEXT ---
+   210 000031AD B86400              <1>     mov  ax, GAMEOVER_MENU_BUTTON_X
+   211 000031B0 83C00F              <1>     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
+   212 000031B3 89C1                <1>     mov  cx, ax
+   213                              <1> 
+   214 000031B5 B84200              <1>     mov  ax, GAMEOVER_MENU_BUTTON_Y + 1
+   215 000031B8 83C005              <1>     add  ax, GAMEOVER_MENU_BUTTON_HEIGHT / 4
+   216 000031BB 0306[E205]          <1>     add  ax, [DIS]
+   217 000031BF 89C2                <1>     mov  dx, ax
+   218                              <1> 
+   219 000031C1 BE[D005]            <1>     mov  si, menu_quit
+   220 000031C4 8A1E[0500]          <1>     mov  bl, [bright_yellow]
+   221 000031C8 B701                <1>     mov  bh, 1
+   222 000031CA E813D0              <1>     call drawText
+   223                              <1> 
+   224 000031CD 1F                  <1>     pop ds
+   225 000031CE 5F                  <1>     pop di
+   226 000031CF 5E                  <1>     pop si
+   227 000031D0 5A                  <1>     pop dx
+   228 000031D1 59                  <1>     pop cx
+   229 000031D2 5B                  <1>     pop bx
+   230 000031D3 58                  <1>     pop ax
+   231 000031D4 C3                  <1>     ret
+   232                              <1> 
+   233                              <1> ; ------------------------------------------------------------
+   234                              <1> ; UPDATE PADDING
+   235                              <1> ; ------------------------------------------------------------
+   236                              <1> updatePad:
+   237 000031D5 A1[E205]            <1>     mov  ax, [DIS]
+   238 000031D8 83C014              <1>     add  ax, GAMEOVER_MENU_BUTTON_HEIGHT
+   239 000031DB 83C00A              <1>     add  ax, GAMEOVER_MENU_BUTTON_HEIGHT / 2
+   240 000031DE A3[E205]            <1>     mov  [DIS], ax
+   241 000031E1 C3                  <1>     ret
+    18                                  
+    19                                  ; --------------------------------------------------------------------------
+    20                                  ; PROGRAM ENTRY
+    21                                  ; --------------------------------------------------------------------------
+    22                                  start:
+    23                                      ; Set VGA 320x200x256 mode
+    24 000031E2 B81300                      mov ax, 0x0013
+    25 000031E5 CD10                        int 0x10
+    26                                  
+    27                                      ; Initialize game state
+    28 000031E7 C606[0106]00                mov byte [game_state], STATE_MENU
+    29                                  
+    30                                  ; --------------------------------------------------------------------------
+    31                                  ; MAIN GAME LOOP
+    32                                  ; --------------------------------------------------------------------------
+    33                                  game_loop:
+    34 000031EC A0[0106]                    mov al, [game_state]
+    35                                  
+    36 000031EF E80BD3                      call clearScreen320x200
+    37 000031F2 E890D4                      call showBackground320x200
+    38                                      
+    39 000031F5 3C00                        cmp al, STATE_MENU
+    40 000031F7 7412                        je .handle_menu
+    41 000031F9 3C01                        cmp al, STATE_GAME
+    42 000031FB 741D                        je .handle_game
+    43 000031FD 3C02                        cmp al, STATE_PAUSE
+    44 000031FF 7427                        je .handle_pause
+    45 00003201 3C03                        cmp al, STATE_GAMEOVER
+    46 00003203 742D                        je .handle_gameover
+    47 00003205 3C04                        cmp al, STATE_EXIT
+    48 00003207 7450                        je .exit_program
+    49                                      
+    50 00003209 EBE1                        jmp game_loop           ; Safety fallback
+    51                                  
+    52                                  .handle_menu:
+    53 0000320B E8CDF9                      call drawMainMenu
+    54 0000320E E81CF8                      call handleMainMenuInput    ; Returns selection in AL
+    55                                      
+    56 00003211 3CFF                        cmp al, 0xFF                ; ESC pressed?
+    57 00003213 7444                        je .exit_program
+    58                                      
+    59 00003215 E8C2F8                      call executeMenuChoice
+    60 00003218 EBD2                        jmp game_loop
+    61                                  
+    62                                  .handle_game:
+    63                                      ; TODO: Main game logic goes here
+    64 0000321A E899FA                      call showMainGameScreen
+    65                                      
+    66                                      ; Temporary: Press any key to go to game over
+    67 0000321D B400                        mov ah, 0x00
+    68 0000321F CD16                        int 0x16
+    69 00003221 C606[0106]03                mov byte [game_state], STATE_GAMEOVER
+    70 00003226 EBC4                        jmp game_loop
+    71                                  
+    72                                  .handle_pause:
+    73 00003228 E829FD                      call showPauseScreen
+    74                                      ; TODO: Handle pause input
+    75 0000322B C606[0106]01                mov byte [game_state], STATE_GAME
+    76 00003230 EBBA                        jmp game_loop
+    77                                  
+    78                                  .handle_gameover:
+    79 00003232 E841FE                      call showGameOverScreen
+    80                                      
+    81                                      ; Wait for R (Retry) or Q (Quit)
+    82 00003235 B400                        mov ah, 0x00
+    83 00003237 CD16                        int 0x16
+    84                                      
+    85 00003239 3C72                        cmp al, 'r'
+    86 0000323B 740E                        je .retry
+    87 0000323D 3C52                        cmp al, 'R'
+    88 0000323F 740A                        je .retry
+    89 00003241 3C71                        cmp al, 'q'
+    90 00003243 740D                        je .quit_to_menu
+    91 00003245 3C51                        cmp al, 'Q'
+    92 00003247 7409                        je .quit_to_menu
+    93 00003249 EBE7                        jmp .handle_gameover
+    94                                  
+    95                                  .retry:
+    96 0000324B C606[0106]01                mov byte [game_state], STATE_GAME
+    97 00003250 EB9A                        jmp game_loop
+    98                                  
+    99                                  .quit_to_menu:
+   100 00003252 C606[0106]00                mov byte [game_state], STATE_MENU
+   101 00003257 EB93                        jmp game_loop
+   102                                  
+   103                                  .exit_program:
+   104                                      ; Return to text mode
+   105 00003259 B80300                      mov ax, 0x0003
+   106 0000325C CD10                        int 0x10
+   107                                      
+   108                                      ; Exit to DOS
+   109 0000325E B8004C                      mov ax, 0x4C00
+   110 00003261 CD21                        int 0x21

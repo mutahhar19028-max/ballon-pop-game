@@ -1,0 +1,22 @@
+     1 00000000 00                      char_color : db 0
+     2                                  
+     3 00000001 00                      white : db 0
+     4 00000002 01                      cream_brown : db 1
+     5 00000003 02                      sky_blue : db 2 ; 3
+     6                                  
+     7                                  
+     8 00000004 1A                      bright_yellow: db 26
+     9 00000005 16                      dull_yellow : db 22
+    10                                  
+    11 00000006 1C                      light_orange : db 28
+    12 00000007 37                      dark_orange : db 55
+    13                                  
+    14 00000008 2F                      light_brown : db 47
+    15                                  
+    16 00000009 1F                      bright_cyan : db 31
+    17 0000000A 2D                      dull_cyan : db 45
+    18 0000000B 3F                      bold_leaves_green : db 63
+    19                                  
+    20 0000000C 48                      baby_light_light_blue : db 72
+    21 0000000D 04                      light_light_blue: db 4 ; 4-6
+    22 0000000E 47                      light_blue : db 71

@@ -1,0 +1,5 @@
+1) game title in ballons
+2) bubbles with letters in gameplay screen
+3) timer and score digit display
+4) game paused and game over buttons display
+5) game over final score display

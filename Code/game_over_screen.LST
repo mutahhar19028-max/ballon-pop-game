@@ -1,0 +1,315 @@
+     1                                  ; ------------------------------------------------------------
+     2                                  ; PUBLIC: showPauseScreen
+     3                                  ; Main entry point - displays pause overlay and handles input
+     4                                  ; ------------------------------------------------------------
+     5                                  showGameOverScreen:
+     6 00000000 50                          push ax
+     7 00000001 53                          push bx
+     8 00000002 51                          push cx
+     9 00000003 52                          push dx
+    10 00000004 56                          push si
+    11 00000005 57                          push di
+    12 00000006 1E                          push ds
+    13                                  
+    14                                      ; Ensure DS = CS for data access
+    15 00000007 0E                          push cs
+    16 00000008 1F                          pop ds
+    17                                  
+    18                                  .pause_loop:
+    19                                      ; Draw complete pause screen
+    20 00000009 E81400                      call drawGameOverPanel
+    21 0000000C E83000                      call drawGameOverStats
+    22 0000000F E8AE00                      call drawGameOverTitle
+    23 00000012 E8C800                      call drawGameOverMenu
+    24                                  
+    25                                      ; Small delay for animation smoothness
+    26                                      call screenDelay
+    26          ******************       error: symbol `screenDelay' not defined
+    27                                  
+    28 00000015 1F                          pop ds
+    29 00000016 5F                          pop di
+    30 00000017 5E                          pop si
+    31 00000018 5A                          pop dx
+    32 00000019 59                          pop cx
+    33 0000001A 5B                          pop bx
+    34 0000001B 58                          pop ax
+    35 0000001C C3                          ret
+    36                                  
+    37                                  ; ------------------------------------------------------------
+    38                                  ; drawGameOverPanel
+    39                                  ; Draws main pause panel with rounded corners
+    40                                  ; USES: drawRoundedRect from ui.asm
+    41                                  ; ------------------------------------------------------------
+    42                                  drawGameOverPanel:
+    43 0000001D 50                          push ax
+    44 0000001E 53                          push bx
+    45 0000001F 51                          push cx
+    46 00000020 52                          push dx
+    47 00000021 56                          push si
+    48 00000022 57                          push di
+    49                                  
+    50                                      ; Main panel body
+    51                                      mov ax, GAMEOVER_PANEL_X
+    51          ******************       error: symbol `GAMEOVER_PANEL_X' not defined
+    52                                      mov bx, GAMEOVER_PANEL_Y
+    52          ******************       error: symbol `GAMEOVER_PANEL_Y' not defined
+    53                                      mov cx, GAMEOVER_PANEL_WIDTH
+    53          ******************       error: symbol `GAMEOVER_PANEL_WIDTH' not defined
+    54                                      mov dx, GAMEOVER_PANEL_HEIGHT
+    54          ******************       error: symbol `GAMEOVER_PANEL_HEIGHT' not defined
+    55                                      mov si, GAMEOVER_PANEL_COLOR
+    55          ******************       error: symbol `GAMEOVER_PANEL_COLOR' not defined
+    56                                      call drawRoundedRect
+    56          ******************       error: symbol `drawRoundedRect' not defined
+    57                                  
+    58 00000023 5F                          pop di
+    59 00000024 5E                          pop si
+    60 00000025 5A                          pop dx
+    61 00000026 59                          pop cx
+    62 00000027 5B                          pop bx
+    63 00000028 58                          pop ax
+    64 00000029 C3                          ret
+    65                                  
+    66                                  
+    67                                  drawGameOverStats:
+    68 0000002A 50                          push ax
+    69 0000002B 53                          push bx
+    70 0000002C 51                          push cx
+    71 0000002D 52                          push dx
+    72 0000002E 56                          push si
+    73 0000002F 57                          push di
+    74                                  
+    75                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+    75          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+    76                                      mov  bx, GAMEOVER_MENU_BUTTON_Y
+    76          ******************       error: symbol `GAMEOVER_MENU_BUTTON_Y' not defined
+    77                                      add  bx, [DIST]
+    77          ******************       error: symbol `DIST' not defined
+    78                                      mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+    78          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+    79                                      mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+    79          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+    80                                      mov  si, [dark_brown]
+    80          ******************       error: symbol `dark_brown' not defined
+    81                                      call drawRoundedRect
+    81          ******************       error: symbol `drawRoundedRect' not defined
+    82                                  
+    83 00000030 E82901                      call updatePad
+    84                                  
+    85                                      ; --- SCORE TEXT ---
+    86                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+    86          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+    87                                      add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 10
+    87          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+    88 00000033 89C1                        mov  cx, ax
+    89                                  
+    90                                      mov  ax, GAMEOVER_PANEL_Y
+    90          ******************       error: symbol `GAMEOVER_PANEL_Y' not defined
+    91                                      add  ax, GAMEOVER_PANEL_HEIGHT / 3
+    91          ******************       error: symbol `GAMEOVER_PANEL_HEIGHT' not defined
+    92                                      add  ax, [DIST]
+    92          ******************       error: symbol `DIST' not defined
+    93 00000035 89C2                        mov  dx, ax
+    94                                  
+    95                                      mov  si, stats_score_label
+    95          ******************       error: symbol `stats_score_label' not defined
+    96                                      mov  bl, [dark_brown]
+    96          ******************       error: symbol `dark_brown' not defined
+    97 00000037 B701                        mov  bh, 1
+    98                                      call drawText
+    98          ******************       error: symbol `drawText' not defined
+    99                                  
+   100                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+   100          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+   101                                      mov  bx, GAMEOVER_MENU_BUTTON_Y
+   101          ******************       error: symbol `GAMEOVER_MENU_BUTTON_Y' not defined
+   102                                      add  bx, [DIST]
+   102          ******************       error: symbol `DIST' not defined
+   103                                      mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   103          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+   104                                      mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   104          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   105                                      mov  si, [dark_brown]
+   105          ******************       error: symbol `dark_brown' not defined
+   106                                      call drawRoundedRect
+   106          ******************       error: symbol `drawRoundedRect' not defined
+   107                                  
+   108 00000039 E82001                      call updatePad
+   109                                  
+   110                                      ; --- TIME TEXT ---
+   111                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+   111          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+   112                                      add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 10
+   112          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+   113 0000003C 89C1                        mov  cx, ax
+   114                                  
+   115                                      mov  ax, GAMEOVER_PANEL_Y
+   115          ******************       error: symbol `GAMEOVER_PANEL_Y' not defined
+   116                                      add  ax, GAMEOVER_PANEL_HEIGHT / 3
+   116          ******************       error: symbol `GAMEOVER_PANEL_HEIGHT' not defined
+   117                                      add  ax, [DIST]
+   117          ******************       error: symbol `DIST' not defined
+   118 0000003E 89C2                        mov  dx, ax
+   119                                  
+   120                                      mov  si, stats_time_label
+   120          ******************       error: symbol `stats_time_label' not defined
+   121                                      mov  bl, [dark_brown]
+   121          ******************       error: symbol `dark_brown' not defined
+   122 00000040 B701                        mov  bh, 1
+   123                                      call drawText
+   123          ******************       error: symbol `drawText' not defined
+   124                                  
+   125 00000042 5F                          pop di
+   126 00000043 5E                          pop si
+   127 00000044 5A                          pop dx
+   128 00000045 59                          pop cx
+   129 00000046 5B                          pop bx
+   130 00000047 58                          pop ax
+   131 00000048 C3                          ret
+   132                                  
+   133                                  ; ------------------------------------------------------------
+   134                                  ; drawGameOverTitle
+   135                                  ; Draws pulsing "GAME OVER" title
+   136                                  ; CALLS: drawTextCentered
+   137                                  ; ------------------------------------------------------------
+   138                                  drawGameOverTitle:
+   139 00000049 50                          push ax
+   140 0000004A 53                          push bx
+   141 0000004B 51                          push cx
+   142 0000004C 52                          push dx
+   143 0000004D 56                          push si
+   144 0000004E 57                          push di
+   145                                  
+   146 0000004F B95A00                      mov  cx, 90
+   147 00000052 BA2000                      mov  dx, 32
+   148                                      mov  si, gameover_title              ; DS:SI -> title string
+   148          ******************       error: symbol `gameover_title' not defined
+   149                                      mov  bl, GAMEOVER_TITLE_COLOR     ; color
+   149          ******************       error: symbol `GAMEOVER_TITLE_COLOR' not defined
+   150 00000055 B702                        mov  bh, 2
+   151                                      call drawText
+   151          ******************       error: symbol `drawText' not defined
+   152                                  
+   153 00000057 5F                          pop di
+   154 00000058 5E                          pop si
+   155 00000059 5A                          pop dx
+   156 0000005A 59                          pop cx
+   157 0000005B 5B                          pop bx
+   158 0000005C 58                          pop ax
+   159 0000005D C3                          ret
+   160                                  
+   161                                  ; ============================================================
+   162                                  ; END OF pause_screen.asm
+   163                                  ; ============================================================
+   164                                  
+   165                                  drawGameOverMenu:
+   166 0000005E 50                          push ax
+   167 0000005F 53                          push bx
+   168 00000060 51                          push cx
+   169 00000061 52                          push dx
+   170 00000062 56                          push si
+   171 00000063 57                          push di
+   172                                  
+   173                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+   173          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+   174                                      mov  bx, GAMEOVER_MENU_BUTTON_Y
+   174          ******************       error: symbol `GAMEOVER_MENU_BUTTON_Y' not defined
+   175                                      add  bx, [DIS]
+   175          ******************       error: symbol `DIS' not defined
+   176                                      mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   176          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+   177                                      mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   177          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   178                                      mov  si, [dark_brown]
+   178          ******************       error: symbol `dark_brown' not defined
+   179                                      call drawRoundedRect
+   179          ******************       error: symbol `drawRoundedRect' not defined
+   180                                  
+   181                                      ; --- RETRY TEXT ---
+   182                                      mov  ax, GAMEOVER_MENU_BUTTON_X + 3
+   182          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+   183                                      add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
+   183          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+   184 00000064 89C1                        mov  cx, ax
+   185                                  
+   186                                      mov  ax, GAMEOVER_MENU_BUTTON_Y
+   186          ******************       error: symbol `GAMEOVER_MENU_BUTTON_Y' not defined
+   187                                      add  ax, GAMEOVER_MENU_BUTTON_HEIGHT / 4
+   187          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   188                                      add  ax, [DIS]
+   188          ******************       error: symbol `DIS' not defined
+   189 00000066 89C2                        mov  dx, ax
+   190                                  
+   191                                      mov  si, menu_retry
+   191          ******************       error: symbol `menu_retry' not defined
+   192                                      mov  bl, [bright_yellow]
+   192          ******************       error: symbol `bright_yellow' not defined
+   193 00000068 B701                        mov  bh, 1
+   194                                      call drawText
+   194          ******************       error: symbol `drawText' not defined
+   195                                  
+   196 0000006A E8EF00                      call updatePad
+   197                                  
+   198                                      ; ------------------------------------------------------------
+   199                                      ; QUIT BUTTON
+   200                                      ; ------------------------------------------------------------
+   201                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+   201          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+   202                                      mov  bx, GAMEOVER_MENU_BUTTON_Y
+   202          ******************       error: symbol `GAMEOVER_MENU_BUTTON_Y' not defined
+   203                                      add  bx, [DIS]
+   203          ******************       error: symbol `DIS' not defined
+   204                                      mov  cx, GAMEOVER_MENU_BUTTON_WIDTH
+   204          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+   205                                      mov  dx, GAMEOVER_MENU_BUTTON_HEIGHT
+   205          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   206                                      mov  si, [dark_brown]
+   206          ******************       error: symbol `dark_brown' not defined
+   207                                      call drawRoundedRect
+   207          ******************       error: symbol `drawRoundedRect' not defined
+   208                                  
+   209                                      ; --- QUIT TEXT ---
+   210                                      mov  ax, GAMEOVER_MENU_BUTTON_X
+   210          ******************       error: symbol `GAMEOVER_MENU_BUTTON_X' not defined
+   211                                      add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
+   211          ******************       error: symbol `GAMEOVER_MENU_BUTTON_WIDTH' not defined
+   212 0000006D 89C1                        mov  cx, ax
+   213                                  
+   214                                      mov  ax, GAMEOVER_MENU_BUTTON_Y
+   214          ******************       error: symbol `GAMEOVER_MENU_BUTTON_Y' not defined
+   215                                      add  ax, GAMEOVER_MENU_BUTTON_HEIGHT / 4
+   215          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   216                                      add  ax, [DIS]
+   216          ******************       error: symbol `DIS' not defined
+   217 0000006F 89C2                        mov  dx, ax
+   218                                  
+   219                                      mov  si, menu_quit
+   219          ******************       error: symbol `menu_quit' not defined
+   220                                      mov  bl, [bright_yellow]
+   220          ******************       error: symbol `bright_yellow' not defined
+   221 00000071 B701                        mov  bh, 1
+   222                                      call drawText
+   222          ******************       error: symbol `drawText' not defined
+   223                                  
+   224 00000073 1F                          pop ds
+   225 00000074 5F                          pop di
+   226 00000075 5E                          pop si
+   227 00000076 5A                          pop dx
+   228 00000077 59                          pop cx
+   229 00000078 5B                          pop bx
+   230 00000079 58                          pop ax
+   231 0000007A C3                          ret
+   232                                  
+   233                                  ; ------------------------------------------------------------
+   234                                  ; UPDATE PADDING
+   235                                  ; ------------------------------------------------------------
+   236                                  updatePad:
+   237                                      mov  ax, [DIS]
+   237          ******************       error: symbol `DIS' not defined
+   238                                      add  ax, GAMEOVER_MENU_BUTTON_HEIGHT
+   238          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   239                                      add  ax, GAMEOVER_MENU_BUTTON_HEIGHT / 2
+   239          ******************       error: symbol `GAMEOVER_MENU_BUTTON_HEIGHT' not defined
+   240                                      mov  [DIS], ax
+   240          ******************       error: symbol `DIS' not defined
+   241 0000007B C3                          ret

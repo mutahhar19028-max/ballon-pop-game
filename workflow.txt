@@ -1,0 +1,336 @@
+================================================================================
+                    BALLOON TYPING GAME - WORKFLOW
+================================================================================
+Project: Assembly Language Typing Game (8088/8086)
+Course: EE2003 - Computer Organisation and Assembly Language
+Team: [Your Team Name]
+Date: [Current Date]
+
+================================================================================
+PHASE 1: INITIALIZATION & MENU SYSTEM
+================================================================================
+
+1. PROGRAM STARTUP
+   ├─ Set VGA Mode 13h (320x200x256 colors)
+   ├─ Load custom palette from palette.bin
+   ├─ Load background image from imgData.raw
+   └─ Initialize game state to STATE_MENU
+
+2. MAIN MENU DISPLAY
+   ├─ Draw background image
+   ├─ Draw title "BALLOON GAME"
+   ├─ Draw three buttons:
+   │  ├─ PLAY
+   │  ├─ HELP
+   │  └─ EXIT
+   └─ Initialize current_selection = 0 (PLAY)
+
+3. MENU NAVIGATION
+   ├─ Draw arrow indicator ('>') at current selection
+   ├─ Wait for keyboard input (INT 16h)
+   ├─ Handle key presses:
+   │  ├─ UP ARROW (0x48): Move selection up (with wrap)
+   │  ├─ DOWN ARROW (0x50): Move selection down (with wrap)
+   │  ├─ ENTER (0x1C): Execute selected option
+   │  └─ ESC (0x01): Exit to DOS
+   └─ Loop until selection made
+
+4. MENU OPTION EXECUTION
+   ├─ PLAY selected → game_state = STATE_GAME
+   ├─ HELP selected → Show help screen, return to menu
+   └─ EXIT selected → game_state = STATE_EXIT → Return to DOS
+
+================================================================================
+PHASE 2: GAME INITIALIZATION
+================================================================================
+
+1. GAME SCREEN SETUP
+   ├─ Clear screen or redraw background
+   ├─ Draw UI elements:
+   │  ├─ Score panel (top-left area)
+   │  ├─ Timer panel (top-right area)
+   │  ├─ Sound button (bottom-left)
+   │  └─ Pause button (bottom-left)
+   └─ Initialize game variables:
+      ├─ current_score = 0
+      ├─ timer = 120 seconds (2 minutes)
+      ├─ balloon_count = 0
+      └─ game_paused = 0
+
+2. BALLOON DATA STRUCTURES
+   ├─ balloon_array: Array of balloon structs
+   │  Each balloon contains:
+   │  ├─ x_position (word)
+   │  ├─ y_position (word)
+   │  ├─ letter (byte, 'A'-'Z')
+   │  ├─ color (byte)
+   │  ├─ active_flag (byte, 0=inactive, 1=active)
+   │  └─ speed (byte)
+   └─ max_balloons = 10 (simultaneous)
+
+================================================================================
+PHASE 3: MAIN GAME LOOP
+================================================================================
+
+GAME LOOP STRUCTURE:
+while (game_state == STATE_GAME):
+    1. Check timer
+    2. Handle input
+    3. Update balloons
+    4. Check collisions
+    5. Update display
+    6. Check end conditions
+
+DETAILED LOOP:
+
+1. TIMER UPDATE
+   ├─ Decrement timer based on system clock (INT 1Ah)
+   ├─ Update timer display
+   └─ If timer == 0 → game_state = STATE_GAMEOVER
+
+2. INPUT HANDLING
+   ├─ Check for keyboard input (INT 16h, non-blocking AH=01h)
+   ├─ If key pressed:
+   │  ├─ ESC → game_state = STATE_PAUSE
+   │  ├─ Letter key (A-Z):
+   │  │  ├─ Search balloon_array for matching letter
+   │  │  ├─ If found:
+   │  │  │  ├─ Set balloon.active_flag = 0
+   │  │  │  ├─ Play pop sound
+   │  │  │  ├─ current_score += 10
+   │  │  │  └─ Update score display
+   │  │  └─ If not found: Ignore or play error sound
+   │  └─ Other keys: Ignore
+   └─ Continue
+
+3. BALLOON SPAWNING
+   ├─ Every N frames (spawn_rate):
+   │  ├─ Count active balloons
+   │  ├─ If count < max_balloons:
+   │  │  ├─ Find free slot in balloon_array
+   │  │  ├─ Initialize new balloon:
+   │  │  │  ├─ x = random (20 to 300)
+   │  │  │  ├─ y = 199 (bottom of screen)
+   │  │  │  ├─ letter = random ('A' to 'Z')
+   │  │  │  ├─ color = random or fixed
+   │  │  │  ├─ speed = 1-3 pixels/frame
+   │  │  │  └─ active_flag = 1
+   │  │  └─ Draw new balloon
+   │  └─ spawn_timer = 0
+   └─ Increment spawn_timer
+
+4. BALLOON MOVEMENT
+   For each balloon in balloon_array:
+      ├─ If active_flag == 1:
+      │  ├─ Erase balloon at old position (redraw background)
+      │  ├─ y_position -= speed (move upward)
+      │  ├─ If y_position < 0 (balloon escaped):
+      │  │  ├─ active_flag = 0
+      │  │  └─ Optional: Decrement lives or penalty
+      │  └─ Draw balloon at new position
+      └─ Continue to next balloon
+
+5. DISPLAY UPDATE
+   ├─ Update score text
+   ├─ Update timer text
+   └─ Optional: Screen refresh delay for smooth animation
+
+6. END CONDITION CHECK
+   ├─ If timer == 0:
+   │  ├─ game_state = STATE_GAMEOVER
+   │  └─ Store final_score
+   ├─ If lives == 0 (optional):
+   │  ├─ game_state = STATE_GAMEOVER
+   │  └─ Store final_score
+   └─ If no conditions met: Continue loop
+
+================================================================================
+PHASE 4: PAUSE SCREEN
+================================================================================
+
+1. PAUSE ACTIVATION
+   ├─ Triggered by ESC key during gameplay
+   ├─ game_state = STATE_PAUSE
+   └─ Save current game state
+
+2. PAUSE SCREEN DISPLAY
+   ├─ Darken/overlay current screen (optional)
+   ├─ Draw pause panel (centered)
+   ├─ Draw title "PAUSED"
+   ├─ Draw options:
+   │  ├─ RESUME (ESC)
+   │  ├─ RESTART (R)
+   │  └─ QUIT (Q)
+   └─ Wait for input
+
+3. PAUSE INPUT HANDLING
+   ├─ ESC → game_state = STATE_GAME (resume)
+   ├─ R → Reset game variables, game_state = STATE_GAME
+   ├─ Q → game_state = STATE_MENU
+   └─ Loop until valid key pressed
+
+================================================================================
+PHASE 5: GAME OVER SCREEN
+================================================================================
+
+1. GAME OVER TRIGGER
+   ├─ Timer reaches 0
+   └─ Store final_score, final_time, balloons_popped
+
+2. GAME OVER DISPLAY
+   ├─ Clear screen or fade effect
+   ├─ Draw game over panel
+   ├─ Display:
+   │  ├─ "GAME OVER" title
+   │  ├─ Final score
+   │  ├─ Time played
+   │  ├─ Balloons popped
+   │  └─ Statistics
+   ├─ Draw options:
+   │  ├─ RETRY (R)
+   │  └─ QUIT (Q)
+   └─ Wait for input
+
+3. GAME OVER INPUT
+   ├─ R → Reset game, game_state = STATE_GAME
+   ├─ Q → game_state = STATE_MENU
+   └─ Loop until valid key pressed
+
+================================================================================
+PHASE 6: PROGRAM EXIT
+================================================================================
+
+1. EXIT SEQUENCE
+   ├─ game_state = STATE_EXIT
+   ├─ Call setTextMode (mode 03h)
+   ├─ Display exit message (optional)
+   └─ INT 21h, AH=4Ch (terminate program)
+
+================================================================================
+KEY ALGORITHMS & TECHNIQUES
+================================================================================
+
+1. RANDOM NUMBER GENERATION
+   ├─ Use system timer (INT 1Ah) as seed
+   ├─ Linear Congruential Generator (LCG):
+   │  next = (a * seed + c) mod m
+   └─ Range conversion for x-position and letters
+
+2. BALLOON RENDERING
+   ├─ Use drawCircleFilled for balloon body
+   ├─ Use drawVerticalLine for string
+   └─ Use drawChar for letter on balloon
+
+3. TIMING & ANIMATION
+   ├─ Use INT 1Ah (Get System Time) for frame timing
+   ├─ Calculate delta time between frames
+   └─ Update positions based on speed * delta_time
+
+4. COLLISION DETECTION
+   ├─ Simple letter matching (keyboard input vs balloon.letter)
+   └─ No spatial collision needed (typing game)
+
+5. SCREEN UPDATES
+   ├─ Selective redrawing (only changed areas)
+   ├─ Double buffering (optional, for flicker-free)
+   └─ VGA memory direct write for speed
+
+================================================================================
+DATA FLOW DIAGRAM
+================================================================================
+
+[Keyboard] ──→ [Input Handler] ──→ [Game Logic]
+                                       │
+                                       ├─→ [Balloon Manager]
+                                       │    ├─ Spawn
+                                       │    ├─ Move
+                                       │    └─ Remove
+                                       │
+                                       ├─→ [Score Manager]
+                                       │    └─ Update Display
+                                       │
+                                       ├─→ [Timer Manager]
+                                       │    └─ Update Display
+                                       │
+                                       └─→ [Render Engine]
+                                            ├─ Background
+                                            ├─ UI Elements
+                                            ├─ Balloons
+                                            └─ Text
+
+[System Clock] ──→ [Timer Manager] ──→ [Game Logic]
+[Random Seed]  ──→ [RNG] ──→ [Balloon Manager]
+
+================================================================================
+MEMORY LAYOUT
+================================================================================
+
+CODE SEGMENT:
+   ├─ mainRunner.asm (entry point, game loop)
+   ├─ navigation.asm (menu handling)
+   ├─ ui.asm (drawing primitives)
+   ├─ font.asm (character rendering)
+   ├─ sound.asm (PC speaker sounds)
+   └─ screen modules (menu, game, pause, gameover)
+
+DATA SEGMENT:
+   ├─ game_state (byte)
+   ├─ current_score (word)
+   ├─ timer_seconds (byte)
+   ├─ balloon_array (struct array, 10 entries)
+   ├─ current_selection (byte)
+   ├─ color palette (768 bytes)
+   └─ text strings (null-terminated)
+
+VGA MEMORY:
+   └─ 0xA000:0000 - 0xA000:FA00 (64000 bytes, 320x200)
+
+STACK:
+   └─ Function call stack, local variables
+
+================================================================================
+ERROR HANDLING
+================================================================================
+
+1. File Loading Errors
+   ├─ palette.bin not found → Use default VGA palette
+   └─ imgData.raw not found → Use solid color background
+
+2. Input Edge Cases
+   ├─ Rapid key presses → Queue or debounce
+   └─ Invalid keys → Ignore silently
+
+3. Balloon Array Overflow
+   ├─ Check active count before spawning
+   └─ Reuse inactive slots
+
+4. Timer Overflow
+   ├─ Use system clock ticks
+   └─ Handle midnight rollover (rare)
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+□ Menu navigation (up/down/enter/esc)
+□ Help screen display and return
+□ Game start transition
+□ Balloon spawning at random positions
+□ Balloon upward movement
+□ Correct key matching and popping
+□ Wrong key handling (ignore)
+□ Score increment on pop
+□ Timer countdown
+□ Game over at timer = 0
+□ Pause functionality (esc)
+□ Resume from pause
+□ Restart game
+□ Return to menu
+□ Exit to DOS
+□ No screen flickering
+□ No memory leaks (balloon array management)
+□ Sound effects work
+
+================================================================================
+END OF WORKFLOW
+================================================================================

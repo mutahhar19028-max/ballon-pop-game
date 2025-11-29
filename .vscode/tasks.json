@@ -2,58 +2,70 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "shell", 
-            "label": "Set Conf File", 
-            "command": "${workspaceFolder}\\Tools\\configure.bat", 
-            "args": [
-                "'${workspaceFolder}'"
-            ],
-            "group": "none", 
+            "type": "shell",
+            "label": "Set Conf File",
+            "command": "${workspaceFolder}\\Tools\\configure.bat",
+            "args": ["${workspaceFolder}"],
+            "group": "none",
             "problemMatcher": [],
-            "detail": "Task to set the configuration file for DOSBox"
-        }, 
+            "detail": "Set DOSBox config"
+        },
+
         {
             "type": "shell",
             "label": "Assemble Only",
             "command": "${workspaceFolder}\\Tools\\nasm",
             "args": [
-                "${file}", "-o", "${fileDirname}\\${fileBasenameNoExtension}.COM"
+                "${file}",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.COM"
             ],
             "group": "build",
-            "problemMatcher": [],
-            "detail": "Task to assemble an assembly file using NASM"
+            "problemMatcher": []
         },
+
         {
             "type": "shell",
             "label": "Assemble and Link",
             "command": "${workspaceFolder}\\Tools\\nasm",
             "args": [
-                "${file}", "-o", "${fileDirname}\\${fileBasenameNoExtension}.COM", "-l", "${fileDirname}\\${fileBasenameNoExtension}.LST"
+                "${file}",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.COM",
+                "-l",
+                "${fileDirname}\\${fileBasenameNoExtension}.LST"
             ],
             "group": "build",
-            "problemMatcher": [],
-            "detail": "Task to assemble and link an assembly file using NASM"
+            "problemMatcher": []
         },
-        { 
+
+        {
             "type": "shell",
             "label": "Build ELF File",
             "command": "${workspaceFolder}\\Tools\\convert_to_elf.bat",
             "args": [
-                "'${file}'",
-                "'${fileDirname}'",
-                "'${fileBasenameNoExtension}'",
-                "'${workspaceFolder}\\Tools\\nasm'"
+                "${file}",
+                "${fileDirname}",
+                "${fileBasenameNoExtension}",
+                "${workspaceFolder}\\Tools\\nasm"
             ],
             "group": "build",
-            "problemMatcher": [],
-            "detail": "Replace org 0x0100 with bits 16 and create ELF file using batch script"
+            "problemMatcher": []
         },
+
         {
             "type": "shell",
             "label": "Assemble and Run",
             "command": "${workspaceFolder}\\DOSBoxPortable\\DOSBoxPortable.exe",
             "args": [
-                "-c", "\\${relativeFileDirname}\\${fileBasenameNoExtension}.COM"
+                "-conf",
+                "${workspaceFolder}\\dosbox.conf",
+                "-c",
+                "mount c ${workspaceFolder}\\Code",
+                "-c",
+                "c:",
+                "-c",
+                "Code\\coden.COM"
             ],
             "dependsOrder": "sequence",
             "dependsOn": [
@@ -64,43 +76,50 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": [],
-            "detail": "Task to assemble and run the assembled and linked program"
+            "problemMatcher": []
         },
+
         {
             "type": "shell",
             "label": "Debug with AFD",
             "command": "${workspaceFolder}\\DOSBoxPortable\\DOSBoxPortable.exe",
             "args": [
-                "-c", "\\Tools\\afd \\${relativeFileDirname}\\${fileBasenameNoExtension}.COM"
+                "-conf",
+                "${workspaceFolder}\\dosbox.conf",
+                "-c",
+                "mount c ${workspaceFolder}",
+                "-c",
+                "c:",
+                "-c",
+                "Tools\\afd Code\\${fileBasenameNoExtension}.COM"
             ],
-            "dependsOn": [
-                "Set Conf File",
-                "Assemble and Link"
-            ],
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            },
-            "problemMatcher": [],
-            "detail": "Task to assemble and debug the assembled and linked program using afd"
-        }, 
+            "dependsOn": ["Set Conf File", "Assemble and Link"],
+            "group": "test",
+            "problemMatcher": []
+        },
+
         {
             "type": "shell",
             "label": "Assemble and Debug",
             "command": "${workspaceFolder}\\DOSBoxPortable\\DOSBoxPortable.exe",
             "args": [
-                "-c", "\\Code\\debug.COM \\${relativeFileDirname}\\${fileBasenameNoExtension}.COM"
-            ], 
+                "-conf",
+                "${workspaceFolder}\\dosbox.conf",
+                "-c",
+                "mount c ${workspaceFolder}",
+                "-c",
+                "c:",
+                "-c",
+                "Code\\debug.COM Code\\${fileBasenameNoExtension}.COM"
+            ],
             "dependsOrder": "sequence",
             "dependsOn": [
                 "Set Conf File",
-                "Assemble and Link", 
+                "Assemble and Link",
                 "Build ELF File"
-            ], 
-            "group": "build", 
-            "problemMatcher": [],
-            "detail": "Task to assemble and debug the assembled and linked program using debug.COM"
+            ],
+            "group": "build",
+            "problemMatcher": []
         }
     ]
 }

@@ -1,0 +1,410 @@
+     1                                  %define SCREEN_WIDTH    320
+     2                                  %define SCREEN_HEIGHT   200
+     3                                  %define VGA_SEGMENT     0xA000
+     4                                  
+     5                                  ; ------------------------------------------------------------
+     6                                  ; drawRoundedRect
+     7                                  ; ------------------------------------------------------------
+     8                                  ; INPUT:
+     9                                  ;   AX = X coordinate (top-left)
+    10                                  ;   BX = Y coordinate (top-left)
+    11                                  ;   CX = Width in pixels
+    12                                  ;   DX = Height in pixels
+    13                                  ;   SI = Fill color
+    14                                  ;   DI = Border color
+    15                                  ; OUTPUT:
+    16                                  ;   Rounded rectangle with 2-pixel corner radius
+    17                                  ; EFFECT:
+    18                                  ;   Draws main body as filled rect (offset by 2 pixels)
+    19                                  ;   Draws top/bottom strips for rounded edges
+    20                                  ;   Draws border outline using drawRectOutline
+    21                                  ;   Creates visual effect of rounded corners by omitting corner pixels
+    22                                  ; ------------------------------------------------------------
+    23                                  drawRoundedRect:
+    24 00000000 50                          push ax
+    25 00000001 53                          push bx
+    26 00000002 51                          push cx
+    27 00000003 52                          push dx
+    28 00000004 56                          push si
+    29 00000005 57                          push di
+    30 00000006 55                          push bp
+    31                                  
+    32 00000007 89E5                        mov bp, sp
+    33 00000009 83EC0A                      sub sp, 10
+    34 0000000C 8946FE                      mov word [bp-2], ax
+    35 0000000F 895EFC                      mov word [bp-4], bx
+    36 00000012 894EFA                      mov word [bp-6], cx
+    37 00000015 8956F8                      mov word [bp-8], dx
+    38 00000018 8976F6                      mov word [bp-10], si
+    39                                  
+    40 0000001B 8B46FE                      mov ax, [bp-2]
+    41 0000001E 8B5EFC                      mov bx, [bp-4]
+    42 00000021 83C302                      add bx, 2
+    43 00000024 8B4EFA                      mov cx, [bp-6]
+    44 00000027 8B56F8                      mov dx, [bp-8]
+    45 0000002A 83EA04                      sub dx, 4
+    46 0000002D 8B76F6                      mov si, [bp-10]
+    47 00000030 E85200                      call drawFilledRect
+    48                                  
+    49 00000033 8B46FE                      mov ax, [bp-2]
+    50 00000036 83C002                      add ax, 2
+    51 00000039 8B5EFC                      mov bx, [bp-4]
+    52 0000003C 8B4EFA                      mov cx, [bp-6]
+    53 0000003F 83E904                      sub cx, 4
+    54 00000042 BA0200                      mov dx, 2
+    55 00000045 8B76F6                      mov si, [bp-10]
+    56 00000048 E83A00                      call drawFilledRect
+    57                                  
+    58 0000004B 8B46FE                      mov ax, [bp-2]
+    59 0000004E 83C002                      add ax, 2
+    60 00000051 8B5EFC                      mov bx, [bp-4]
+    61 00000054 035EF8                      add bx, [bp-8]
+    62 00000057 83EB02                      sub bx, 2
+    63 0000005A 8B4EFA                      mov cx, [bp-6]
+    64 0000005D 83E904                      sub cx, 4
+    65 00000060 BA0200                      mov dx, 2
+    66 00000063 8B76F6                      mov si, [bp-10]
+    67 00000066 E81C00                      call drawFilledRect
+    68                                  
+    69 00000069 8B46FE                      mov ax, [bp-2]
+    70 0000006C 8B5EFC                      mov bx, [bp-4]
+    71 0000006F 8B4EFA                      mov cx, [bp-6]
+    72 00000072 8B56F8                      mov dx, [bp-8]
+    73 00000075 89FE                        mov si, di
+    74 00000077 E84B00                      call drawRectOutline
+    75                                  
+    76 0000007A 83C40A                      add sp, 10
+    77 0000007D 5D                          pop bp
+    78 0000007E 5F                          pop di
+    79 0000007F 5E                          pop si
+    80 00000080 5A                          pop dx
+    81 00000081 59                          pop cx
+    82 00000082 5B                          pop bx
+    83 00000083 58                          pop ax
+    84 00000084 C3                          ret
+    85                                  
+    86                                  ; ------------------------------------------------------------
+    87                                  ; drawFilledRect
+    88                                  ; ------------------------------------------------------------
+    89                                  ; INPUT:
+    90                                  ;   AX = X coordinate (top-left)
+    91                                  ;   BX = Y coordinate (top-left)
+    92                                  ;   CX = Width in pixels
+    93                                  ;   DX = Height in pixels
+    94                                  ;   SI = Color value
+    95                                  ; OUTPUT:
+    96                                  ;   Solid filled rectangle
+    97                                  ; EFFECT:
+    98                                  ;   Draws DX rows, each CX pixels wide
+    99                                  ;   Calculates offset for each row: (Y*320 + X)
+   100                                  ;   Fills each row left to right with specified color
+   101                                  ; ------------------------------------------------------------
+   102                                  drawFilledRect:
+   103 00000085 50                          push ax
+   104 00000086 53                          push bx
+   105 00000087 51                          push cx
+   106 00000088 52                          push dx
+   107 00000089 57                          push di
+   108 0000008A 06                          push es
+   109 0000008B 55                          push bp
+   110                                  
+   111 0000008C 3D4001                      cmp ax, 320
+   112 0000008F 732C                        jae .done
+   113 00000091 81FBC800                    cmp bx, 200
+   114 00000095 7326                        jae .done
+   115                                  
+   116 00000097 BD00A0                      mov bp, VGA_SEGMENT
+   117 0000009A 8EC5                        mov es, bp
+   118                                  
+   119 0000009C 89D5                        mov bp, dx
+   120                                  
+   121                                  .row_loop:
+   122 0000009E 51                          push cx
+   123 0000009F 50                          push ax
+   124                                      
+   125 000000A0 89DF                        mov di, bx
+   126 000000A2 52                          push dx
+   127 000000A3 BA4001                      mov dx, 320
+   128 000000A6 50                          push ax
+   129 000000A7 89F8                        mov ax, di
+   130 000000A9 F7E2                        mul dx
+   131 000000AB 89C7                        mov di, ax
+   132 000000AD 58                          pop ax
+   133 000000AE 5A                          pop dx
+   134 000000AF 01C7                        add di, ax
+   135                                  
+   136                                  .col_loop:
+   137 000000B1 268935                      mov [es:di], si
+   138 000000B4 47                          inc di
+   139 000000B5 E2FA                        loop .col_loop
+   140                                      
+   141 000000B7 58                          pop ax
+   142 000000B8 59                          pop cx
+   143 000000B9 43                          inc bx
+   144 000000BA 4D                          dec bp
+   145 000000BB 75E1                        jnz .row_loop
+   146                                  
+   147                                  .done:
+   148 000000BD 5D                          pop bp
+   149 000000BE 07                          pop es
+   150 000000BF 5F                          pop di
+   151 000000C0 5A                          pop dx
+   152 000000C1 59                          pop cx
+   153 000000C2 5B                          pop bx
+   154 000000C3 58                          pop ax
+   155 000000C4 C3                          ret
+   156                                  
+   157                                  ; ------------------------------------------------------------
+   158                                  ; drawRectOutline
+   159                                  ; ------------------------------------------------------------
+   160                                  ; INPUT:
+   161                                  ;   AX = X coordinate (top-left)
+   162                                  ;   BX = Y coordinate (top-left)
+   163                                  ;   CX = Width in pixels
+   164                                  ;   DX = Height in pixels
+   165                                  ;   SI = Color value for border
+   166                                  ; OUTPUT:
+   167                                  ;   Hollow rectangle (4 border lines only)
+   168                                  ; EFFECT:
+   169                                  ;   Draws top horizontal line at (X, Y)
+   170                                  ;   Draws bottom horizontal line at (X, Y+Height-1)
+   171                                  ;   Draws left vertical line at (X, Y)
+   172                                  ;   Draws right vertical line at (X+Width-1, Y)
+   173                                  ;   Interior remains unchanged
+   174                                  ; ------------------------------------------------------------
+   175                                  drawRectOutline:
+   176 000000C5 50                          push ax
+   177 000000C6 53                          push bx
+   178 000000C7 51                          push cx
+   179 000000C8 52                          push dx
+   180 000000C9 57                          push di
+   181 000000CA 55                          push bp
+   182                                  
+   183 000000CB 89E5                        mov bp, sp
+   184 000000CD 83EC08                      sub sp, 8
+   185 000000D0 8946FE                      mov [bp-2], ax
+   186 000000D3 895EFC                      mov [bp-4], bx
+   187 000000D6 894EFA                      mov [bp-6], cx
+   188 000000D9 8956F8                      mov [bp-8], dx
+   189                                  
+   190 000000DC 8B46FE                      mov ax, [bp-2]
+   191 000000DF 8B5EFC                      mov bx, [bp-4]
+   192 000000E2 8B4EFA                      mov cx, [bp-6]
+   193 000000E5 E83600                      call drawHorizontalLine
+   194                                  
+   195 000000E8 8B46FE                      mov ax, [bp-2]
+   196 000000EB 8B5EFC                      mov bx, [bp-4]
+   197 000000EE 035EF8                      add bx, [bp-8]
+   198 000000F1 4B                          dec bx
+   199 000000F2 8B4EFA                      mov cx, [bp-6]
+   200 000000F5 E82600                      call drawHorizontalLine
+   201                                  
+   202 000000F8 8B46FE                      mov ax, [bp-2]
+   203 000000FB 8B5EFC                      mov bx, [bp-4]
+   204 000000FE 8B56F8                      mov dx, [bp-8]
+   205 00000101 E85200                      call drawVerticalLine
+   206                                  
+   207 00000104 8B46FE                      mov ax, [bp-2]
+   208 00000107 0346FA                      add ax, [bp-6]
+   209 0000010A 48                          dec ax
+   210 0000010B 8B5EFC                      mov bx, [bp-4]
+   211 0000010E 8B56F8                      mov dx, [bp-8]
+   212 00000111 E84200                      call drawVerticalLine
+   213                                  
+   214 00000114 83C408                      add sp, 8
+   215 00000117 5D                          pop bp
+   216 00000118 5F                          pop di
+   217 00000119 5A                          pop dx
+   218 0000011A 59                          pop cx
+   219 0000011B 5B                          pop bx
+   220 0000011C 58                          pop ax
+   221 0000011D C3                          ret
+   222                                  
+   223                                  
+   224                                  ; ------------------------------------------------------------
+   225                                  ; drawHorizontalLine
+   226                                  ; ------------------------------------------------------------
+   227                                  ; INPUT:
+   228                                  ;   AX = Starting X coordinate
+   229                                  ;   BX = Y coordinate
+   230                                  ;   CX = Length in pixels
+   231                                  ;   SI = Color value
+   232                                  ; OUTPUT:
+   233                                  ;   Horizontal line drawn from (X,Y) extending CX pixels right
+   234                                  ; EFFECT:
+   235                                  ;   Calculates starting offset (Y*320 + X)
+   236                                  ;   Writes color value CX times sequentially
+   237                                  ;   Performs basic bounds checking
+   238                                  ; ------------------------------------------------------------
+   239                                  drawHorizontalLine:
+   240 0000011E 50                          push ax
+   241 0000011F 53                          push bx
+   242 00000120 51                          push cx
+   243 00000121 57                          push di
+   244 00000122 06                          push es
+   245 00000123 52                          push dx
+   246                                  
+   247 00000124 81FBC800                    cmp bx, 200
+   248 00000128 7325                        jae .done
+   249 0000012A 3D4001                      cmp ax, 320
+   250 0000012D 7320                        jae .done
+   251                                  
+   252 0000012F BF00A0                      mov di, 0xA000
+   253 00000132 8EC7                        mov es, di
+   254                                  
+   255 00000134 89DF                        mov di, bx
+   256 00000136 BA4001                      mov dx, 320
+   257 00000139 50                          push ax
+   258 0000013A 89F8                        mov ax, di
+   259 0000013C F7E2                        mul dx
+   260 0000013E 89C7                        mov di, ax
+   261 00000140 58                          pop ax
+   262 00000141 01C7                        add di, ax
+   263                                  
+   264                                  .draw_loop:
+   265 00000143 81FF00FA                    cmp di, 64000
+   266 00000147 7306                        jae .done
+   267 00000149 268935                      mov [es:di], si
+   268 0000014C 47                          inc di
+   269 0000014D E2F4                        loop .draw_loop
+   270                                  
+   271                                  .done:
+   272 0000014F 5A                          pop dx
+   273 00000150 07                          pop es
+   274 00000151 5F                          pop di
+   275 00000152 59                          pop cx
+   276 00000153 5B                          pop bx
+   277 00000154 58                          pop ax
+   278 00000155 C3                          ret
+   279                                  
+   280                                  ; ------------------------------------------------------------
+   281                                  ; drawVerticalLine
+   282                                  ; ------------------------------------------------------------
+   283                                  ; INPUT:
+   284                                  ;   AX = X coordinate
+   285                                  ;   BX = Starting Y coordinate
+   286                                  ;   DX = Length in pixels (height)
+   287                                  ;   SI = Color value
+   288                                  ; OUTPUT:
+   289                                  ;   Vertical line drawn from (X,Y) extending DX pixels down
+   290                                  ; EFFECT:
+   291                                  ;   Recalculates offset for each row (Y*320 + X)
+   292                                  ;   Writes one pixel per row, incrementing Y
+   293                                  ;   Loops DX times downward
+   294                                  ; ------------------------------------------------------------
+   295                                  drawVerticalLine:
+   296 00000156 50                          push ax
+   297 00000157 53                          push bx
+   298 00000158 52                          push dx
+   299 00000159 57                          push di
+   300 0000015A 06                          push es
+   301                                  
+   302 0000015B 3D4001                      cmp ax, 320
+   303 0000015E 7323                        jae .done
+   304 00000160 81FBC800                    cmp bx, 200
+   305 00000164 731D                        jae .done
+   306                                  
+   307 00000166 BF00A0                      mov di, 0xA000
+   308 00000169 8EC7                        mov es, di
+   309                                  
+   310                                  .draw_loop:
+   311 0000016B 52                          push dx
+   312 0000016C 89DF                        mov di, bx
+   313 0000016E BA4001                      mov dx, 320
+   314 00000171 50                          push ax
+   315 00000172 89F8                        mov ax, di
+   316 00000174 F7E2                        mul dx
+   317 00000176 89C7                        mov di, ax
+   318 00000178 58                          pop ax
+   319 00000179 5A                          pop dx
+   320 0000017A 01C7                        add di, ax
+   321                                      
+   322 0000017C 268935                      mov [es:di], si
+   323 0000017F 43                          inc bx
+   324 00000180 4A                          dec dx
+   325 00000181 75E8                        jnz .draw_loop
+   326                                  
+   327                                  .done:
+   328 00000183 07                          pop es
+   329 00000184 5F                          pop di
+   330 00000185 5A                          pop dx
+   331 00000186 5B                          pop bx
+   332 00000187 58                          pop ax
+   333 00000188 C3                          ret
+   334                                  
+   335                                  ; ------------------------------------------------------------
+   336                                  ; clearScreen
+   337                                  ; ------------------------------------------------------------
+   338                                  ; INPUT:
+   339                                  ;   [char_color] = Color value to fill screen (0-255)
+   340                                  ; OUTPUT:
+   341                                  ;   Entire screen filled with specified color
+   342                                  ; EFFECT:
+   343                                  ;   Uses REP STOSB to efficiently write 64000 bytes
+   344                                  ;   Sets all VGA memory (0xA000:0000) to same color
+   345                                  ; ------------------------------------------------------------
+   346                                  clearScreen:
+   347 00000189 50                          push ax
+   348 0000018A 51                          push cx
+   349 0000018B 57                          push di
+   350 0000018C 06                          push es
+   351                                  
+   352 0000018D B800A0                      mov ax, VGA_SEGMENT
+   353 00000190 8EC0                        mov es, ax
+   354 00000192 31FF                        xor di, di
+   355 00000194 B900FA                      mov cx, SCREEN_WIDTH * SCREEN_HEIGHT   ; 64000
+   356 00000197 30E4                        xor ah, ah
+   357                                      mov al, [char_color]
+   357          ******************       error: symbol `char_color' not defined
+   358 00000199 F3AA                        rep stosb
+   359                                  
+   360 0000019B 07                          pop es
+   361 0000019C 5F                          pop di
+   362 0000019D 59                          pop cx
+   363 0000019E 58                          pop ax
+   364 0000019F C3                          ret
+   365                                  
+   366                                  ; ------------------------------------------------------------
+   367                                  ; display_palette_wide
+   368                                  ; ------------------------------------------------------------
+   369                                  ; EFFECT:
+   370                                  ;   Prints 256 colors as wide strips (160 pixels each)
+   371                                  ; ------------------------------------------------------------
+   372                                  display_palette_wide:
+   373 000001A0 50                          push ax
+   374 000001A1 53                          push bx             ; Preserve BX for inner loop counter
+   375 000001A2 51                          push cx
+   376 000001A3 57                          push di
+   377 000001A4 06                          push es
+   378                                      
+   379                                      ; 1. Setup ES:DI to point to the start of VGA memory (A000:0000)
+   380 000001A5 B800A0                      mov ax, 0A000h      ; VGA_SEGMENT
+   381 000001A8 8EC0                        mov es, ax
+   382 000001AA 31FF                        xor di, di          ; DI = 0 (start of video memory)
+   383                                  
+   384                                      ; 2. Setup Outer Loop (256 Colors)
+   385 000001AC B92800                      mov cx, 40         ; CX = Outer loop counter (256 colors)
+   386 000001AF B01C                        mov al, 28         ; AL = Color Index (starts at 0)
+   387                                  
+   388                                  outer_color_loop:
+   389                                      ; 3. Setup Inner Loop (160 Pixels)
+   390 000001B1 BB0005                      mov bx, 320 * 4         ; BX = Inner loop counter (160 pixels wide)
+   391                                  
+   392                                  inner_pixel_loop:
+   393 000001B4 AA                          stosb               ; Write AL (current color) to [ES:DI], then DI = DI + 1
+   394 000001B5 4B                          dec bx              ; BX = BX - 1
+   395 000001B6 75FC                        jnz inner_pixel_loop; Continue inner loop until 160 pixels are written
+   396                                  
+   397                                      ; 4. Increment Color Index
+   398 000001B8 FEC0                        inc al              ; AL = AL + 1 (move to the next color)
+   399                                  
+   400                                      ; 5. Continue Outer Loop
+   401 000001BA E2F5                        loop outer_color_loop ; Decrement CX, jump to outer_color_loop if CX != 0
+   402                                  
+   403                                      ; Restore registers
+   404 000001BC 07                          pop es
+   405 000001BD 5F                          pop di
+   406 000001BE 59                          pop cx
+   407 000001BF 5B                          pop bx
+   408 000001C0 58                          pop ax
+   409 000001C1 C3                          ret

@@ -1,0 +1,119 @@
+     1                                  ; ------------------------------------------------------------
+     2                                  ; PUBLIC: showPauseScreen
+     3                                  ; Main entry point - displays pause overlay and handles input
+     4                                  ; ------------------------------------------------------------
+     5                                  showPauseScreen:
+     6 00000000 50                          push ax
+     7 00000001 53                          push bx
+     8 00000002 51                          push cx
+     9 00000003 52                          push dx
+    10 00000004 56                          push si
+    11 00000005 57                          push di
+    12 00000006 1E                          push ds
+    13                                  
+    14                                      ; Ensure DS = CS for data access
+    15 00000007 0E                          push cs
+    16 00000008 1F                          pop ds
+    17                                  
+    18                                  .pause_loop:
+    19                                      ; Draw complete pause screen
+    20 00000009 E80E00                      call drawPausePanel
+    21 0000000C E84000                      call drawPauseTitle
+    22                                  
+    23                                      ; Small delay for animation smoothness
+    24                                      call screenDelay
+    24          ******************       error: symbol `screenDelay' not defined
+    25                                  
+    26 0000000F 1F                          pop ds
+    27 00000010 5F                          pop di
+    28 00000011 5E                          pop si
+    29 00000012 5A                          pop dx
+    30 00000013 59                          pop cx
+    31 00000014 5B                          pop bx
+    32 00000015 58                          pop ax
+    33 00000016 C3                          ret
+    34                                  
+    35                                  ; ------------------------------------------------------------
+    36                                  ; drawPausePanel
+    37                                  ; Draws main pause panel with rounded corners
+    38                                  ; USES: drawRoundedRect from ui.asm
+    39                                  ; ------------------------------------------------------------
+    40                                  drawPausePanel:
+    41 00000017 50                          push ax
+    42 00000018 53                          push bx
+    43 00000019 51                          push cx
+    44 0000001A 52                          push dx
+    45 0000001B 56                          push si
+    46 0000001C 57                          push di
+    47                                  
+    48                                      ; Main panel body
+    49                                      mov ax, PAUSE_PANEL_X
+    49          ******************       error: symbol `PAUSE_PANEL_X' not defined
+    50                                      mov bx, PAUSE_PANEL_Y
+    50          ******************       error: symbol `PAUSE_PANEL_Y' not defined
+    51                                      mov cx, PAUSE_PANEL_WIDTH
+    51          ******************       error: symbol `PAUSE_PANEL_WIDTH' not defined
+    52                                      mov dx, PAUSE_PANEL_HEIGHT
+    52          ******************       error: symbol `PAUSE_PANEL_HEIGHT' not defined
+    53                                      mov si, PAUSE_PANEL_COLOR
+    53          ******************       error: symbol `PAUSE_PANEL_COLOR' not defined
+    54                                      mov di, PAUSE_BORDER_COLOR
+    54          ******************       error: symbol `PAUSE_BORDER_COLOR' not defined
+    55                                      call drawRoundedRect
+    55          ******************       error: symbol `drawRoundedRect' not defined
+    56                                  
+    57                                      ; Inner shadow effect (optional enhancement)
+    58                                      mov ax, PAUSE_PANEL_X + 2
+    58          ******************       error: symbol `PAUSE_PANEL_X' not defined
+    59                                      mov bx, PAUSE_PANEL_Y + 2
+    59          ******************       error: symbol `PAUSE_PANEL_Y' not defined
+    60                                      mov cx, PAUSE_PANEL_WIDTH - 4
+    60          ******************       error: symbol `PAUSE_PANEL_WIDTH' not defined
+    61 0000001D BA0100                      mov dx, 1
+    62                                      mov si, [light_brown]            ; Dark gray
+    62          ******************       error: symbol `light_brown' not defined
+    63                                      call drawFilledRect
+    63          ******************       error: symbol `drawFilledRect' not defined
+    64                                  
+    65 00000020 5F                          pop di
+    66 00000021 5E                          pop si
+    67 00000022 5A                          pop dx
+    68 00000023 59                          pop cx
+    69 00000024 5B                          pop bx
+    70 00000025 58                          pop ax
+    71 00000026 C3                          ret
+    72                                  
+    73                                  ; ------------------------------------------------------------
+    74                                  ; drawPauseTitle
+    75                                  ; Draws pulsing "GAME PAUSED" title
+    76                                  ; CALLS: drawTextCentered
+    77                                  ; ------------------------------------------------------------
+    78                                  drawPauseTitle:
+    79 00000027 50                          push ax
+    80 00000028 53                          push bx
+    81 00000029 51                          push cx
+    82 0000002A 52                          push dx
+    83 0000002B 56                          push si
+    84 0000002C 57                          push di
+    85                                  
+    86 0000002D B96E00                      mov  cx, 110
+    87 00000030 BA3200                      mov  dx, 50
+    88                                      mov  si, pause_title              ; DS:SI -> title string
+    88          ******************       error: symbol `pause_title' not defined
+    89                                      mov  bl, [bold_leaves_green]     ; color
+    89          ******************       error: symbol `bold_leaves_green' not defined
+    90 00000033 B702                        mov  bh, 2
+    91                                      call drawText
+    91          ******************       error: symbol `drawText' not defined
+    92                                  
+    93 00000035 5F                          pop di
+    94 00000036 5E                          pop si
+    95 00000037 5A                          pop dx
+    96 00000038 59                          pop cx
+    97 00000039 5B                          pop bx
+    98 0000003A 58                          pop ax
+    99 0000003B C3                          ret
+   100                                  
+   101                                  ; ============================================================
+   102                                  ; END OF pause_screen.asm
+   103                                  ; ============================================================

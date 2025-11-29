@@ -1,0 +1,40 @@
+================================================================================
+                BALLOON TYPING GAME - PROJECT STRUCTURE
+================================================================================
+
+PROJECT ROOT DIRECTORY TREE:
+BalloonGame/
+│
+├── mainRunner.asm              [Main Entry Point, Game Loop]
+│   ├─ Size: ~150 lines
+│   ├─ Purpose: Program initialization, state machine, main loop
+│   ├─ Dependencies: All Code/*.asm modules
+│   └─ Key Functions:
+│       ├─ start: Entry point, VGA setup
+│       ├─ game_loop: Main state dispatcher
+│       ├─ handle_menu: Menu logic
+│       ├─ handle_game: Gameplay logic
+│       ├─ handle_pause: Pause logic
+│       ├─ handle_gameover: Game over logic
+│       └─ exit_program: Cleanup and exit
+│
+├── Code/                       [All Module Files]
+│   │
+│   ├── font.asm                [BIOS Font Data]
+│   │   ├─ Size: ~2KB (256 characters × 8 bytes)
+│   │   ├─ Purpose: 8x8 pixel character definitions
+│   │   ├─ Data: FONT_SEG (0xFFA6), FONT_OFF (0xE)
+│   │   └─ Used by: drawText, drawChar (in ui.asm)
+│   │
+│   ├── colors.asm              [Color Palette Definitions]
+│   │   ├─ Size: ~50 lines
+│   │   ├─ Purpose: Named color constants for easy reference
+│   │   ├─ Data Examples:
+│   │   │   ├─ char_color: Background color
+│   │   │   ├─ light_orange: Button fill
+│   │   │   ├─ dark_orange: Button border
+│   │   │   ├─ dark_brown: Text color
+│   │   │   └─ nature_dark_green: Title color
+│   │   └─ Used by: All screen modules
+│   │
+│   ├── ui.asm                  [Drawing Primitives Library

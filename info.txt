@@ -1,0 +1,464 @@
+================================================================================
+                    BALLOON TYPING GAME - PROJECT INFO
+================================================================================
+
+PROJECT TITLE: Balloon Typing Game in x86 Assembly Language
+COURSE: EE2003 - Computer Organisation and Assembly Language
+INSTRUCTOR: Aleena Ahmed
+TEACHING ASSISTANT: Abdul Haleem Cheema
+SEMESTER: [Your Semester]
+TEAM: [Your Team Name/Members]
+
+================================================================================
+PROJECT OVERVIEW
+================================================================================
+
+OBJECTIVE:
+Develop a fully functional typing game in x86 Assembly Language (8088/8086)
+where players type letters on rising balloons to pop them and earn points
+within a 2-minute time limit.
+
+TARGET PLATFORM:
+- Processor: Intel 8088/8086 (16-bit real mode)
+- Operating System: DOS or DOSBox emulator
+- Display: VGA Mode 13h (320x200 pixels, 256 colors)
+- Input: Keyboard via BIOS interrupts
+- Sound: PC Speaker (optional)
+
+GAME RULES:
+1. Player has 2 minutes (120 seconds) to play
+2. Balloons with random letters (A-Z) spawn at bottom and float upward
+3. Type the letter on a balloon to pop it
+4. Each popped balloon awards 10 points
+5. Balloons that reach the top disappear (optional penalty)
+6. Game ends when timer reaches zero
+7. Final score displayed on game over screen
+
+KEY FEATURES:
+- Main menu with navigation (Play, Help, Exit)
+- Real-time balloon spawning and movement
+- Keyboard-driven gameplay
+- Score tracking and timer display
+- Pause functionality during gameplay
+- Game over screen with statistics
+- Custom VGA palette and background image
+- Sound effects for balloon pops (bonus)
+
+================================================================================
+TECHNICAL SPECIFICATIONS
+================================================================================
+
+ASSEMBLY LANGUAGE:
+- Syntax: NASM (Netwide Assembler)
+- Architecture: x86 16-bit (8088/8086 compatible)
+- Memory Model: COM executable (ORG 0x100)
+
+GRAPHICS:
+- Mode: VGA Mode 13h (320x200x256)
+- Color Depth: 8-bit indexed color (256 colors)
+- Palette: Custom 768-byte palette (palette.bin)
+- Background: Raw image file (imgData.raw, 64000 bytes)
+
+INTERRUPTS USED:
+- INT 10h: Video services (mode setting, text display)
+- INT 16h: Keyboard services (key detection, reading)
+- INT 1Ah: Time-of-day services (timer, random seed)
+- INT 21h: DOS services (file I/O, program termination)
+
+FILE STRUCTURE:
+Project Root/
+├── mainRunner.asm          (Entry point, game loop)
+├── Code/
+│   ├── font.asm            (8x8 BIOS font data)
+│   ├── colors.asm          (Color palette definitions)
+│   ├── ui.asm              (Drawing primitives: circles, rects, text)
+│   ├── constants.asm       (Game constants, button positions)
+│   ├── navigation.asm      (Menu navigation, input handling)
+│   ├── sound.asm           (PC speaker sound effects)
+│   ├── show_bg.asm         (Background image loader)
+│   ├── main_menu.asm       (Main menu screen)
+│   ├── main_game_screen.asm(Game UI elements)
+│   ├── pause_screen.asm    (Pause overlay)
+│   └── game_over_screen.asm(Game over display)
+├── palette.bin             (256-color VGA palette, 768 bytes)
+├── imgData.raw             (Background image, 320x200 raw pixels)
+├── workflow.txt            (Development workflow)
+├── project_info.txt        (This file)
+└── project_structure.txt   (Detailed file structure)
+
+COMPILATION:
+nasm -f bin mainRunner.asm -o BALLOON.COM
+
+EXECUTION:
+DOSBox or real DOS:
+  BALLOON.COM
+
+================================================================================
+GAME SCREENS
+================================================================================
+
+1. MAIN MENU
+   - Title: "BALLOON GAME"
+   - Options: PLAY, HELP, EXIT
+   - Navigation: Arrow keys + Enter
+   - Background: Custom image
+
+2. HELP SCREEN
+   - Instructions on how to play
+   - Game rules
+   - Press any key to return to menu
+
+3. MAIN GAME SCREEN
+   - Top-left: Score display (current score)
+   - Top-right: Timer display (MM:SS format)
+   - Bottom-left: Sound toggle button, Pause button
+   - Center: Gameplay area with balloons
+   - Balloons: Circular shapes with letters
+
+4. PAUSE SCREEN
+   - Semi-transparent overlay (optional)
+   - Title: "PAUSED"
+   - Options: RESUME (ESC), RESTART (R), QUIT (Q)
+   - Freezes game state
+
+5. GAME OVER SCREEN
+   - Title: "GAME OVER"
+   - Final score display
+   - Time played
+   - Balloons popped count
+   - Options: RETRY (R), QUIT (Q)
+
+================================================================================
+CORE GAME MECHANICS
+================================================================================
+
+BALLOON SPAWNING:
+- Random x-position (20-300 pixels)
+- Start at y=199 (bottom of screen)
+- Random letter assignment (A-Z)
+- Spawn rate: Every 1-2 seconds (adjustable)
+- Maximum simultaneous balloons: 10
+
+BALLOON MOVEMENT:
+- Upward motion: y -= speed (speed = 1-3 pixels/frame)
+- Smooth animation using frame timing
+- Removal when y < 0 (reaches top)
+
+INPUT HANDLING:
+- Non-blocking keyboard check (INT 16h, AH=01h)
+- Letter keys (A-Z): Check for matching balloon
+- ESC key: Pause game
+- Ignore non-letter keys during gameplay
+
+COLLISION DETECTION:
+- Simple letter matching (no spatial collision)
+- If typed letter == balloon.letter:
+  - Remove balloon
+  - Play pop sound
+  - Increment score by 10
+  - Update score display
+
+TIMER SYSTEM:
+- Total time: 120 seconds (2 minutes)
+- Update every second using system clock (INT 1Ah)
+- Display format: MM:SS (e.g., "02:00", "01:23")
+- Game ends when timer reaches 00:00
+
+SCORE SYSTEM:
+- Initial score: 0
+- Points per balloon: 10
+- Score display: "SCORE: XXXX"
+- No maximum score limit
+
+================================================================================
+DATA STRUCTURES
+================================================================================
+
+BALLOON STRUCTURE (10 bytes per balloon):
+   Offset | Size | Description
+   -------+------+---------------------------
+   +0     | 2    | x_position (word)
+   +2     | 2    | y_position (word)
+   +4     | 1    | letter (byte, ASCII 'A'-'Z')
+   +5     | 1    | color (byte, palette index)
+   +6     | 1    | active_flag (byte, 0 or 1)
+   +7     | 1    | speed (byte, pixels/frame)
+   +8-9   | 2    | Reserved/padding
+
+BALLOON ARRAY:
+   balloon_array: times (10 * 10) db 0   ; 10 balloons x 10 bytes
+
+GAME STATE VARIABLES:
+   game_state        db 0      ; Current screen state
+   current_score     dw 0      ; Player's score
+   timer_seconds     db 120    ; Remaining time (seconds)
+   current_selection db 0      ; Menu selection index
+   balloon_count     db 0      ; Active balloon count
+   game_paused       db 0      ; Pause flag
+
+================================================================================
+DRAWING PRIMITIVES (ui.asm)
+================================================================================
+
+1. drawFilledRect(x, y, width, height, color)
+   - Draws solid rectangle
+
+2. drawRectOutline(x, y, width, height, color)
+   - Draws hollow rectangle border
+
+3. drawRoundedRect(x, y, width, height, fillColor, borderColor)
+   - Draws rectangle with rounded corners
+
+4. drawCircleFilled(centerX, centerY, radius, color)
+   - Draws solid circle (balloon body)
+
+5. drawCircleOutline(centerX, centerY, radius, color)
+   - Draws circle border
+
+6. drawHorizontalLine(x, y, length, color)
+   - Draws horizontal line
+
+7. drawVerticalLine(x, y, length, color)
+   - Draws vertical line (balloon string)
+
+8. drawText(x, y, string, color, scale)
+   - Renders text using 8x8 BIOS font
+   - Scalable (1x, 2x, 3x, etc.)
+
+9. putPixel(x, y, color)
+   - Draws single pixel at coordinates
+
+10. clearScreen320x200(color)
+    - Fills entire screen with solid color
+
+================================================================================
+SOUND SYSTEM (sound.asm)
+================================================================================
+
+PC SPEAKER CONTROL:
+- Port 61h: Speaker gate control
+- Port 43h: PIT (Programmable Interval Timer) control
+- Port 42h: Frequency divisor
+
+SOUND EFFECTS:
+1. Balloon Pop Sound:
+   - Frequency: 800-1200 Hz
+   - Duration: 50-100 ms
+   - Descending tone (optional)
+
+2. Menu Selection Sound:
+   - Frequency: 1500 Hz
+   - Duration: 20 ms
+   - Single beep
+
+3. Game Over Sound:
+   - Frequency: 400 Hz
+   - Duration: 300 ms
+   - Low tone
+
+FUNCTION:
+playCompletionSound:
+   - Plays short beep using PC speaker
+   - Uses PIT channel 2 for tone generation
+
+================================================================================
+RANDOM NUMBER GENERATION
+================================================================================
+
+ALGORITHM: Linear Congruential Generator (LCG)
+   Formula: next = (a * seed + c) mod m
+   Parameters:
+      a = 1103515245
+      c = 12345
+      m = 2^31
+
+SEED SOURCE:
+   - INT 1Ah: Read system clock ticks
+   - Updated on each random call
+
+USAGE:
+1. Random X Position (20-300):
+   random_value mod 280 + 20
+
+2. Random Letter (A-Z):
+   random_value mod 26 + 65 ('A' ASCII)
+
+3. Random Color (for variety):
+   random_value mod 16 + 240 (bright colors)
+
+================================================================================
+PERFORMANCE OPTIMIZATION
+================================================================================
+
+1. DIRECT VGA MEMORY ACCESS
+   - Segment 0xA000 for fast pixel writes
+   - Avoid BIOS calls in inner loops
+
+2. SELECTIVE REDRAWING
+   - Only redraw changed balloons
+   - Use background buffer for clean erases
+
+3. EFFICIENT LOOPS
+   - Minimize register moves
+   - Use REP STOSB for block fills
+
+4. FRAME TIMING
+   - Target 30-60 FPS
+   - Use system clock for consistent speed
+
+5. REDUCED FUNCTION CALLS
+   - Inline critical sections where needed
+   - Pre-calculate positions when possible
+
+================================================================================
+TESTING & DEBUGGING
+================================================================================
+
+TESTING ENVIRONMENT:
+- DOSBox 0.74+ (recommended)
+- Real DOS (optional, for authentic testing)
+- Debuggers: Turbo Debugger, DOSBox debugger
+
+TEST CASES:
+1. Menu navigation: All options functional
+2. Balloon spawning: No overlap, random positions
+3. Balloon movement: Smooth, no gaps
+4. Input response: Instant key detection
+5. Score accuracy: Correct increments
+6. Timer accuracy: Matches real time (±1 second)
+7. Pause/resume: No state loss
+8. Screen transitions: No artifacts or flickering
+
+KNOWN ISSUES:
+- Potential flicker without double buffering
+- PC speaker may not work on modern systems (use DOSBox)
+- File loading requires correct paths (palette.bin, imgData.raw)
+
+================================================================================
+FUTURE ENHANCEMENTS (BONUS)
+================================================================================
+
+1. DIFFICULTY LEVELS
+   - Easy: Slow balloons, longer timer
+   - Hard: Fast balloons, shorter timer
+
+2. SPECIAL BALLOONS
+   - Bonus balloons (extra points)
+   - Penalty balloons (lose points if popped)
+
+3. COMBO SYSTEM
+   - Consecutive pops increase multiplier
+
+4. POWER-UPS
+   - Slow-motion mode
+   - Auto-pop nearby balloons
+
+5. HIGH SCORE PERSISTENCE
+   - Save top scores to file (INT 21h file write)
+
+6. ADVANCED GRAPHICS
+   - Sprite-based balloons with frames
+   - Particle effects on pop
+
+7. BACKGROUND MUSIC
+   - Multi-channel PC speaker tunes
+
+================================================================================
+REFERENCES & RESOURCES
+================================================================================
+
+DOCUMENTATION:
+- Intel 8086 Family User's Manual
+- IBM VGA BIOS Reference
+- NASM Assembly Language Manual
+- Ralf Brown's Interrupt List
+
+TUTORIALS:
+- VGA Programming in Assembly (multiple online sources)
+- PC Speaker Programming
+- DOSBox Assembly Development
+
+TOOLS:
+- NASM: https://www.nasm.us/
+- DOSBox: https://www.dosbox.com/
+- HxD Hex Editor (for binary file inspection)
+- GIMP (for creating raw image files)
+
+================================================================================
+GRADING CRITERIA (80 Core + 40 Bonus = 120 Total)
+================================================================================
+
+CORE REQUIREMENTS (80 Marks):
+1. Balloon Generation & Movement: 16 marks
+2. Input Handling: 10 marks
+3. Scoring & Timer: 14 marks
+4. State Management: 12 marks
+5. End Conditions: 13 marks
+6. Display & UI Dynamics: 10 marks
+7. Code Understanding: 5 marks
+
+BONUS ENHANCEMENTS (40 Marks):
+A. Gameplay Enhancements: 10 marks
+B. Visual & Creative: 10 marks
+C. Sound & Music: 10 marks
+D. Extra Features: 10 marks
+
+TARGET: 80/80 core (Polished Implementation)
+
+================================================================================
+REVISION HISTORY
+================================================================================
+
+Version 1.0 - [Date]
+- Initial project setup
+- Main menu implementation
+- Navigation system
+
+Version 1.1 - [Date]
+- UI drawing primitives complete
+- Background loading functional
+
+Version 2.0 - [Date]
+- Game loop structure
+- Balloon spawning logic
+- Input handling
+
+Version 2.5 - [Date]
+- Timer system
+- Score tracking
+- Pause screen
+
+Version 3.0 - [Date]
+- Complete game flow
+- Game over screen
+- Sound effects
+
+Final Version - [Date]
+- Bug fixes
+- Performance optimization
+- Documentation complete
+
+================================================================================
+CONTACT & SUBMISSION
+================================================================================
+
+TEAM MEMBERS:
+[Member 1]: [Email/Roll Number]
+[Member 2]: [Email/Roll Number]
+[Member 3]: [Email/Roll Number]
+
+SUBMISSION DATE: [Your Deadline]
+SUBMISSION FORMAT: ZIP archive containing:
+   - All .asm source files
+   - Compiled BALLOON.COM executable
+   - palette.bin and imgData.raw
+   - Documentation (this file + workflow)
+   - README.txt with compilation instructions
+
+INSTRUCTOR CONTACT:
+Aleena Ahmed: [Email]
+Abdul Haleem Cheema (TA): [Email]
+
+================================================================================
+END OF PROJECT INFO
+================================================================================

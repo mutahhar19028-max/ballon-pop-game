@@ -158,7 +158,7 @@ DIS : dw 0
 %define BASE_RADIUS 10
 
 ; === SCORE PANEL ===
-%define SCORE_PANEL_X       (MAX_WIDTH / 2) -  (SCORE_PANEL_WIDTH / 2) - 8 * PADDING - 20
+%define SCORE_PANEL_X       2 * PADDING
 %define SCORE_PANEL_Y       2 * PADDING
 %define SCORE_PANEL_WIDTH   BOX_WIDTH
 %define SCORE_PANEL_HEIGHT  BOX_HEIGHT
@@ -208,7 +208,7 @@ DIS : dw 0
 ; DATA SECTION
 ; ------------------------------------------------------------
 
-current_score       dw 1234
+current_score       dw 0
 sound_enabled       db 1
 game_paused         db 0
 
@@ -260,3 +260,18 @@ game_state          db STATE_MENU
 
 ; Note: If you already have BALLOON_STRING_LEN defined elsewhere,
 ; update it to 2 instead of 18
+
+
+; ============================================================
+; Pause Menu Constants
+; ============================================================
+
+BTN_RESUME          equ 0
+BTN_MAINMENU        equ 1
+
+; Selected button index
+selected_pause_button db 0        ; Tracks which button is currently selected
+
+; Placeholder for redraw function
+; If you already implement this in ui.asm, make it PUBLIC
+redraw_pause_buttons_only  equ 0  ; Can be a dummy placeholder if function is implemented elsewhere

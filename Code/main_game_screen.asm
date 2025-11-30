@@ -12,9 +12,8 @@ showMainGameScreen:
 
     call drawScorePanel
     call drawTimerPanel
-    call drawSoundButton
-    call drawPauseButton
-    ; NOTE: Balloons now drawn by balloon system, not here
+    ;call drawSoundButton
+    ;call drawPauseButton
 
     pop es
     pop di
@@ -38,7 +37,7 @@ drawScorePanel:
 
     mov ax, SCORE_PANEL_X
     mov bx, SCORE_PANEL_Y
-    mov cx, SCORE_PANEL_WIDTH + 8
+    mov cx, SCORE_PANEL_WIDTH + 10
     mov dx, SCORE_PANEL_HEIGHT
     mov si, SCORE_PANEL_COLOR
     mov di, SCORE_BORDER_COLOR
@@ -171,7 +170,7 @@ drawTimerPanel:
     ret
 
 ; Timer label text (just "TIME:")
-timer_label_text    db "TIME:", 0
+timer_label_text    db "TIME: ", 0
 
 ; ------------------------------------------------------------
 ; drawTimerValue

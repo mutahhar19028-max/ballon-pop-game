@@ -27,8 +27,7 @@
 
 ; Balloon colors (8 vibrant colors from your palette)
 balloon_colors:
-    db 26, 28, 31, 63, 72, 71, 47, 55
-
+    db baby_light_light_blue, violet, grey, bright_cyan, light_orange, bright_yellow
 ; ------------------------------------------------------------
 ; BALLOON DATA STRUCTURE (16 bytes per balloon)
 ; ------------------------------------------------------------

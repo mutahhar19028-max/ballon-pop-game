@@ -987,3 +987,13 @@ setTextMode:
     int 0x10
     pop ax
     ret
+
+flushKeyboardBuffer:
+    mov ah, 01h        ; check keystroke available?
+    int 16h
+    jz .done           ; nothing left
+    mov ah, 00h        ; read & discard
+    int 16h
+    jmp flushKeyboardBuffer
+.done:
+    ret

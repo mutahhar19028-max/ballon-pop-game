@@ -1,8 +1,7 @@
 ; ============================================================================
-; drawBalloon - ADJUSTED FOR 24x21 pixels
+; drawBalloon - Fixed color usage with provided palette
 ; ============================================================================
-; INPUT: AX=x, BX=y, CL=color, DL=letter
-; Draws a wider balloon perfect for 8x8 character at scale 1
+; INPUT: AX=x, BX=y, CL=color_index, DL=letter
 ; ============================================================================
 drawBalloon:
     push ax
@@ -14,106 +13,111 @@ drawBalloon:
     push bp
 
     mov bp, sp
-    sub sp, 8
+    sub sp, 10              ; Increased space for circle_color
     mov [bp-2], ax          ; Save X
     mov [bp-4], bx          ; Save Y
-    mov [bp-6], cl          ; Save color
+    mov [bp-6], cl          ; Save color index (0-7)
     mov [bp-8], dl          ; Save letter
 
-    ; Draw balloon body (oval shape using filled circle)
-    mov ax, [bp-2]
-    add ax, 12              ; Center X (24/2 = 12)
-    mov bx, [bp-4]
-    add bx, 8               ; Center Y (16/2 = 8, for body height)
-    mov cx, 7               ; Radius for oval
-    mov dl, byte [bp-6]
-    call drawCircleFilled
+    ; Get actual color for balloon body from balloon_colors table
+    mov cl, [bp-6]
+    and cl, 0x07
+    mov si, balloon_colors
+    add si, cx
+    mov cl, [si]            ; CL = balloon color
+    mov [bp-10], cl         ; Save balloon body color
 
-    ; Draw wider horizontal lines to make it oval (not perfectly round)
-    ; Middle horizontal line (widest part)
-    mov ax, [bp-2]
-    add ax, 2
-    mov bx, [bp-4]
-    add bx, 8               ; Middle Y
-    mov cx, 20              ; Width of oval
-    xor si, si
-    mov si, [bp-6]
-    and si, 0x00FF
-    call drawHorizontalLine
+    ; Get random color for filled circle
+    call getRandomNumber
+    mov bx, 6               ; 6 colors in balloon_colors
+    xor dx, dx
+    div bx                  ; DX = random index (0-5)
+    mov si, balloon_colors
+    add si, dx
+    mov dl, [si]            ; DL = random circle color
 
-    ; Upper-middle horizontal line
-    mov ax, [bp-2]
-    add ax, 3
-    mov bx, [bp-4]
-    add bx, 6
-    mov cx, 18
-    xor si, si
-    mov si, [bp-6]
-    and si, 0x00FF
-    call drawHorizontalLine
-
-    ; Lower-middle horizontal line
-    mov ax, [bp-2]
-    add ax, 3
-    mov bx, [bp-4]
-    add bx, 10
-    mov cx, 18
-    xor si, si
-    mov si, [bp-6]
-    and si, 0x00FF
-    call drawHorizontalLine
-
-    ; Draw balloon outline (darker shade for definition)
+    ; Draw balloon body (oval) with RANDOM color
     mov ax, [bp-2]
     add ax, 12
     mov bx, [bp-4]
     add bx, 8
     mov cx, 7
-    mov dl, [dark_brown]    ; Dark outline
+    ; DL already contains random color
+    call drawCircleFilled
+
+    ; Draw wider horizontal lines for oval shape (use body color)
+    mov cl, [bp-10]         ; Restore body color
+    
+    mov ax, [bp-2]
+    add ax, 2
+    mov bx, [bp-4]
+    add bx, 8
+    mov cx, 20
+    mov si, cx
+    call drawHorizontalLine
+
+    mov ax, [bp-2]
+    add ax, 3
+    mov bx, [bp-4]
+    add bx, 6
+    mov cx, 18
+    mov si, cx
+    call drawHorizontalLine
+
+    mov ax, [bp-2]
+    add ax, 3
+    mov bx, [bp-4]
+    add bx, 10
+    mov cx, 18
+    mov si, cx
+    call drawHorizontalLine
+
+    ; Draw balloon outline in dark brown
+    mov ax, [bp-2]
+    add ax, 12
+    mov bx, [bp-4]
+    add bx, 8
+    mov cx, 7
+    mov dl, [dark_brown]
     call drawCircleOutline
 
-    ; Draw knot (small rectangle at bottom of balloon)
+    ; Draw knot rectangle in light orange
     mov ax, [bp-2]
-    add ax, 10              ; Center knot (24/2 - 2 = 10)
+    add ax, 10
     mov bx, [bp-4]
-    add bx, 16              ; Below balloon body
-    mov cx, 4               ; Width
-    mov dx, 2               ; Height
-    xor si, si
-    mov si, [bp-6]
-    and si, 0x00FF
+    add bx, 16
+    mov cx, 4
+    mov dx, 2
+    mov si, [light_orange]
     call drawFilledRect
 
-    ; Draw string (vertical line)
+    ; Draw string in dark brown
     mov ax, [bp-2]
-    add ax, 12              ; Center string (24/2 = 12)
+    add ax, 12
     mov bx, [bp-4]
-    add bx, 18              ; Below knot
-    mov dx, 3               ; String length
-    xor si, si
-    mov si, [dark_brown]    ; Dark string
-    and si, 0x00FF
+    add bx, 18
+    mov dx, 3
+    mov si, [dark_brown]
     call drawVerticalLine
 
-    ; Draw letter on balloon (8x8 at scale 1)
+    ; Draw letter on balloon (8x8 at scale 1) in white
     mov cx, [bp-2]
-    add cx, 9               ; Center letter X (24/2 - 8/2 = 8)
+    add cx, 9
     mov dx, [bp-4]
-    add dx, 3               ; Center letter Y
-    mov bh, 1               ; Scale 1 (8x8 pixels)
-    mov bl, [dark_brown]    ; Dark letter color for contrast
-    
-    ; Create single-char string
+    add dx, 3
+    mov bh, 1          ; Scale
+    mov bl, [dark_brown]    ; Letter color
+
     sub sp, 2
     mov di, sp
-    mov al, [bp-8]          ; Get letter
+    mov al, [bp-8]
     mov [di], al
-    mov byte [di+1], 0      ; Null terminator
+    mov byte [di+1], 0
     mov si, di
     call drawText
     add sp, 2
 
-    add sp, 8
+    add sp, 10              ; Match increased space
     pop bp
     pop di
     pop si

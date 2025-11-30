@@ -10,507 +10,410 @@
     10 00000005 57                          push di
     11 00000006 06                          push es
     12                                  
-    13 00000007 E81100                      call drawScorePanel
-    14 0000000A E8A300                      call drawTimerPanel
-    15 0000000D E83701                      call drawSoundButton
-    16 00000010 E85701                      call drawPauseButton
-    17                                      ; NOTE: Balloons now drawn by balloon system, not here
-    18                                  
-    19 00000013 07                          pop es
-    20 00000014 5F                          pop di
-    21 00000015 5E                          pop si
-    22 00000016 5A                          pop dx
-    23 00000017 59                          pop cx
-    24 00000018 5B                          pop bx
-    25 00000019 58                          pop ax
-    26 0000001A C3                          ret
-    27                                  
-    28                                  ; ------------------------------------------------------------
-    29                                  ; drawScorePanel
-    30                                  ; ------------------------------------------------------------
-    31                                  drawScorePanel:
-    32 0000001B 50                          push ax
-    33 0000001C 53                          push bx
-    34 0000001D 51                          push cx
-    35 0000001E 52                          push dx
-    36 0000001F 56                          push si
-    37 00000020 57                          push di
-    38                                  
-    39                                      mov ax, SCORE_PANEL_X
-    39          ******************       error: symbol `SCORE_PANEL_X' not defined
-    40                                      mov bx, SCORE_PANEL_Y
-    40          ******************       error: symbol `SCORE_PANEL_Y' not defined
-    41                                      mov cx, SCORE_PANEL_WIDTH
-    41          ******************       error: symbol `SCORE_PANEL_WIDTH' not defined
-    42                                      mov dx, SCORE_PANEL_HEIGHT
-    42          ******************       error: symbol `SCORE_PANEL_HEIGHT' not defined
-    43                                      mov si, SCORE_PANEL_COLOR
-    43          ******************       error: symbol `SCORE_PANEL_COLOR' not defined
-    44                                      mov di, SCORE_BORDER_COLOR
-    44          ******************       error: symbol `SCORE_BORDER_COLOR' not defined
-    45                                      call drawRoundedRect
-    45          ******************       error: symbol `drawRoundedRect' not defined
-    46                                  
-    47                                      mov cx, SCORE_TEXT_X
-    47          ******************       error: symbol `SCORE_TEXT_X' not defined
-    48                                      mov dx, SCORE_TEXT_Y
-    48          ******************       error: symbol `SCORE_TEXT_Y' not defined
-    49                                      mov si, score_label
-    49          ******************       error: symbol `score_label' not defined
-    50                                      mov bl, [dark_brown]
-    50          ******************       error: symbol `dark_brown' not defined
-    51 00000021 B701                        mov bh, 1
-    52                                      call drawText
-    52          ******************       error: symbol `drawText' not defined
-    53                                  
-    54 00000023 E82C00                      call drawScoreValue
-    55                                  
-    56 00000026 5F                          pop di
-    57 00000027 5E                          pop si
-    58 00000028 5A                          pop dx
-    59 00000029 59                          pop cx
-    60 0000002A 5B                          pop bx
-    61 0000002B 58                          pop ax
-    62 0000002C C3                          ret
-    63                                  
-    64                                  ; ------------------------------------------------------------
-    65                                  ; PUBLIC: drawScoreValue
-    66                                  ; Draws the current score at defined position
-    67                                  ; Called by drawScorePanel
-    68                                  ; ------------------------------------------------------------
-    69                                  drawScoreValue:
-    70 0000002D 50                          push ax
-    71 0000002E 53                          push bx
-    72 0000002F 51                          push cx
-    73 00000030 52                          push dx
-    74 00000031 56                          push si
-    75 00000032 57                          push di
-    76 00000033 55                          push bp
-    77                                  
-    78                                      ; Allocate 5 bytes for "0000\0"
-    79 00000034 83EC05                      sub sp, 5
-    80 00000037 89E5                        mov bp, sp          ; BP points to buffer
-    81                                  
-    82                                      mov ax, [current_score]  ; AX = current score
-    82          ******************       error: symbol `current_score' not defined
-    83                                  
-    84                                      ; --- Thousands digit ---
-    85 00000039 B9E803                      mov cx, 1000
-    86 0000003C 31D2                        xor dx, dx
-    87 0000003E F7F1                        div cx                  ; AX / 1000 -> AX = quotient in AL, DX = remainder
-    88 00000040 0430                        add al, '0'
-    89 00000042 884600                      mov [bp], al            ; store thousands digit
-    90                                  
-    91                                      ; --- Hundreds digit ---
-    92 00000045 89D0                        mov ax, dx               ; remainder from thousands division
-    93 00000047 B96400                      mov cx, 100
-    94 0000004A 31D2                        xor dx, dx
-    95 0000004C F7F1                        div cx                   ; AX / 100 -> AL = hundreds, DX = remainder
-    96 0000004E 0430                        add al, '0'
-    97 00000050 884601                      mov [bp+1], al
-    98                                  
-    99                                      ; --- Tens digit ---
-   100 00000053 89D0                        mov ax, dx               ; remainder from hundreds
-   101 00000055 B90A00                      mov cx, 10
-   102 00000058 31D2                        xor dx, dx
-   103 0000005A F7F1                        div cx                   ; AX / 10 -> AL = tens, DX = ones
-   104 0000005C 0430                        add al, '0'
-   105 0000005E 884602                      mov [bp+2], al
-   106                                  
-   107                                      ; --- Ones digit ---
-   108 00000061 88D0                        mov al, dl               ; remainder from tens division
-   109 00000063 0430                        add al, '0'
-   110 00000065 884603                      mov [bp+3], al
-   111                                  
-   112                                      ; --- Null terminator ---
-   113 00000068 C6460400                    mov byte [bp+4], 0
-   114                                  
-   115                                      ; Draw score string
-   116                                      mov cx, SCORE_VALUE_X
-   116          ******************       error: symbol `SCORE_VALUE_X' not defined
-   117                                      mov dx, SCORE_VALUE_Y
-   117          ******************       error: symbol `SCORE_VALUE_Y' not defined
-   118 0000006C 89EE                        mov si, bp
-   119                                      mov bl, [dark_brown]
-   119          ******************       error: symbol `dark_brown' not defined
-   120 0000006E B701                        mov bh, 1
-   121                                      call drawText
-   121          ******************       error: symbol `drawText' not defined
-   122                                  
-   123 00000070 83C405                      add sp, 5
-   124 00000073 5D                          pop bp
-   125 00000074 5F                          pop di
-   126 00000075 5E                          pop si
-   127 00000076 5A                          pop dx
-   128 00000077 59                          pop cx
-   129 00000078 5B                          pop bx
-   130 00000079 58                          pop ax
-   131 0000007A C3                          ret
-   132                                  
-   133                                  ;; ------------------------------------------------------------
-   134                                  ; drawTimerPanel
-   135                                  ; Draws timer panel with dynamic time display
-   136                                  ; ------------------------------------------------------------
-   137                                  drawTimerPanel:
-   138 0000007B 50                          push ax
-   139 0000007C 53                          push bx
-   140 0000007D 51                          push cx
-   141 0000007E 52                          push dx
-   142 0000007F 56                          push si
-   143 00000080 57                          push di
-   144                                  
-   145                                      ; Draw panel background
-   146                                      mov ax, TIMER_PANEL_X
-   146          ******************       error: symbol `TIMER_PANEL_X' not defined
-   147                                      mov bx, TIMER_PANEL_Y
-   147          ******************       error: symbol `TIMER_PANEL_Y' not defined
-   148                                      mov cx, TIMER_PANEL_WIDTH
-   148          ******************       error: symbol `TIMER_PANEL_WIDTH' not defined
-   149                                      mov dx, TIMER_PANEL_HEIGHT
-   149          ******************       error: symbol `TIMER_PANEL_HEIGHT' not defined
-   150                                      mov si, TIMER_PANEL_COLOR
-   150          ******************       error: symbol `TIMER_PANEL_COLOR' not defined
-   151                                      mov di, TIMER_BORDER_COLOR
-   151          ******************       error: symbol `TIMER_BORDER_COLOR' not defined
-   152                                      call drawRoundedRect
-   152          ******************       error: symbol `drawRoundedRect' not defined
-   153                                  
-   154                                      ; Draw "TIME:" label
-   155                                      mov cx, TIMER_TEXT_X
-   155          ******************       error: symbol `TIMER_TEXT_X' not defined
-   156                                      mov dx, TIMER_TEXT_Y
-   156          ******************       error: symbol `TIMER_TEXT_Y' not defined
-   157 00000081 BE[E700]                    mov si, timer_label_text
-   158                                      mov bl, [dark_brown]
-   158          ******************       error: symbol `dark_brown' not defined
-   159 00000084 B701                        mov bh, 1
-   160                                      call drawText
-   160          ******************       error: symbol `drawText' not defined
-   161                                  
-   162                                      ; Draw dynamic timer value (MM:SS)
-   163 00000086 E86400                      call drawTimerValue
-   164                                  
-   165 00000089 5F                          pop di
-   166 0000008A 5E                          pop si
-   167 0000008B 5A                          pop dx
-   168 0000008C 59                          pop cx
-   169 0000008D 5B                          pop bx
-   170 0000008E 58                          pop ax
-   171 0000008F C3                          ret
-   172                                  
-   173                                  ; Timer label text (just "TIME:")
-   174 00000090 54494D453A00            timer_label_text    db "TIME:", 0
-   175                                  
-   176                                  ; ------------------------------------------------------------
-   177                                  ; drawTimerValue
-   178                                  ; Draws the current timer value in MM:SS format
-   179                                  ; Called every frame by drawTimerPanel
-   180                                  ; Reads current values from timer_minutes and timer_display_sec
-   181                                  ; These variables are updated by the timer ISR (once per second)
-   182                                  ; ------------------------------------------------------------
-   183                                  drawTimerValue:
-   184 00000096 50                          push ax
-   185 00000097 53                          push bx
-   186 00000098 51                          push cx
-   187 00000099 52                          push dx
-   188 0000009A 56                          push si
-   189 0000009B 57                          push di
-   190 0000009C 55                          push bp
-   191                                  
-   192                                      ; Allocate 6 bytes on stack for timer string "MM:SS\0"
-   193 0000009D 83EC06                      sub sp, 6
-   194 000000A0 89E5                        mov bp, sp              ; BP points to buffer
-   195                                  
-   196                                      ; Build "MM:SS" string from current timer values
-   197                                      ; --- Minutes tens digit ---
-   198 000000A2 30E4                        xor ah, ah
-   199                                      mov al, [timer_minutes]
-   199          ******************       error: symbol `timer_minutes' not defined
-   200 000000A4 B30A                        mov bl, 10
-   201 000000A6 F6F3                        div bl                  ; AL = tens, AH = ones
-   202 000000A8 0430                        add al, '0'             ; Convert to ASCII
-   203 000000AA 884600                      mov [bp], al            ; Store tens digit
-   204                                      
-   205                                      ; --- Minutes ones digit ---
-   206 000000AD 88E0                        mov al, ah              ; Get ones from AH
-   207 000000AF 0430                        add al, '0'
-   208 000000B1 884601                      mov [bp+1], al
-   209                                  
-   210                                      ; --- Colon separator ---
-   211 000000B4 C646023A                    mov byte [bp+2], ':'
-   212                                  
-   213                                      ; --- Seconds tens digit ---
-   214 000000B8 30E4                        xor ah, ah
-   215                                      mov al, [timer_display_sec]
-   215          ******************       error: symbol `timer_display_sec' not defined
-   216 000000BA B30A                        mov bl, 10
-   217 000000BC F6F3                        div bl                  ; AL = tens, AH = ones
-   218 000000BE 0430                        add al, '0'
-   219 000000C0 884603                      mov [bp+3], al
-   220                                  
-   221                                      ; --- Seconds ones digit ---
-   222 000000C3 88E0                        mov al, ah
-   223 000000C5 0430                        add al, '0'
-   224 000000C7 884604                      mov [bp+4], al
-   225                                  
-   226                                      ; --- Null terminator ---
-   227 000000CA C6460500                    mov byte [bp+5], 0
-   228                                  
-   229                                      ; Draw the timer string at defined position
-   230                                      mov cx, TIMER_VALUE_X
-   230          ******************       error: symbol `TIMER_VALUE_X' not defined
-   231                                      mov dx, TIMER_VALUE_Y
-   231          ******************       error: symbol `TIMER_VALUE_Y' not defined
-   232 000000CE 89EE                        mov si, bp              ; SI points to our string buffer
-   233                                      mov bl, [dark_brown]    ; Text color
-   233          ******************       error: symbol `dark_brown' not defined
-   234 000000D0 B701                        mov bh, 1              ; Scale (2 = medium size)
-   235                                      call drawText
-   235          ******************       error: symbol `drawText' not defined
-   236                                  
-   237                                      ; Clean up stack
-   238 000000D2 83C406                      add sp, 6
-   239                                  
-   240 000000D5 5D                          pop bp
-   241 000000D6 5F                          pop di
-   242 000000D7 5E                          pop si
-   243 000000D8 5A                          pop dx
-   244 000000D9 59                          pop cx
-   245 000000DA 5B                          pop bx
-   246 000000DB 58                          pop ax
-   247 000000DC C3                          ret
-   248                                  
-   249                                  ; ------------------------------------------------------------
-   250                                  ; drawSoundButton
-   251                                  ; ------------------------------------------------------------
-   252                                  drawSoundButton:
-   253 000000DD 50                          push ax
-   254 000000DE 53                          push bx
-   255 000000DF 51                          push cx
-   256 000000E0 52                          push dx
-   257                                  
-   258                                      mov ax, SOUND_BTN_X
-   258          ******************       error: symbol `SOUND_BTN_X' not defined
-   259                                      mov bx, SOUND_BTN_Y
-   259          ******************       error: symbol `SOUND_BTN_Y' not defined
-   260                                      mov cx, SOUND_BTN_RADIUS
-   260          ******************       error: symbol `SOUND_BTN_RADIUS' not defined
-   261                                      mov dl, SOUND_BTN_COLOR
-   261          ******************       error: symbol `SOUND_BTN_COLOR' not defined
-   262                                      call drawCircleFilled
-   262          ******************       error: symbol `drawCircleFilled' not defined
-   263                                  
-   264                                      mov ax, SOUND_BTN_X
-   264          ******************       error: symbol `SOUND_BTN_X' not defined
-   265                                      mov bx, SOUND_BTN_Y
-   265          ******************       error: symbol `SOUND_BTN_Y' not defined
-   266 000000E1 83C002                      add ax, 2
-   267 000000E4 E8A600                      call drawSpeakerIcon
-   268                                  
-   269 000000E7 5A                          pop dx
-   270 000000E8 59                          pop cx
-   271 000000E9 5B                          pop bx
-   272 000000EA 58                          pop ax
-   273 000000EB C3                          ret
-   274                                  
-   275                                  ; ------------------------------------------------------------
-   276                                  ; drawPauseButton
-   277                                  ; ------------------------------------------------------------
-   278                                  drawPauseButton:
-   279 000000EC 50                          push ax
-   280 000000ED 53                          push bx
-   281 000000EE 51                          push cx
-   282 000000EF 52                          push dx
-   283                                  
-   284                                      mov ax, PAUSE_BTN_X
-   284          ******************       error: symbol `PAUSE_BTN_X' not defined
-   285                                      mov bx, PAUSE_BTN_Y
-   285          ******************       error: symbol `PAUSE_BTN_Y' not defined
-   286                                      mov cx, PAUSE_BTN_RADIUS
-   286          ******************       error: symbol `PAUSE_BTN_RADIUS' not defined
-   287                                      mov dl, PAUSE_BTN_COLOR
-   287          ******************       error: symbol `PAUSE_BTN_COLOR' not defined
-   288                                      call drawCircleFilled
-   288          ******************       error: symbol `drawCircleFilled' not defined
-   289                                  
-   290                                      mov ax, PAUSE_BTN_X
-   290          ******************       error: symbol `PAUSE_BTN_X' not defined
-   291                                      mov bx, PAUSE_BTN_Y
-   291          ******************       error: symbol `PAUSE_BTN_Y' not defined
-   292 000000F0 83C002                      add ax, 2
-   293 000000F3 E8C600                      call drawPauseIcon
-   294                                  
-   295 000000F6 5A                          pop dx
-   296 000000F7 59                          pop cx
-   297 000000F8 5B                          pop bx
-   298 000000F9 58                          pop ax
-   299 000000FA C3                          ret
-   300                                  
-   301                                  ; ------------------------------------------------------------
-   302                                  ; drawSpeakerIcon
-   303                                  ; ------------------------------------------------------------
-   304                                  drawSpeakerIcon:
-   305 000000FB 50                          push ax
-   306 000000FC 53                          push bx
-   307 000000FD 51                          push cx
-   308 000000FE 52                          push dx
-   309 000000FF 56                          push si
-   310                                  
-   311 00000100 83E806                      sub ax, 6
-   312 00000103 83EB04                      sub bx, 4
-   313 00000106 B90500                      mov cx, 5
-   314 00000109 BA0800                      mov dx, 8
-   315                                      mov si, PAUSE_BTN_BORDER
-   315          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
-   316                                      call drawFilledRect
-   316          ******************       error: symbol `drawFilledRect' not defined
-   317                                      
-   318 0000010C 83C008                      add ax, 8
-   319 0000010F 83C302                      add bx, 2
-   320 00000112 B90200                      mov cx, 2
-   321 00000115 BA0400                      mov dx, 4
-   322                                      mov si, PAUSE_BTN_BORDER
-   322          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
-   323                                      call drawFilledRect
-   323          ******************       error: symbol `drawFilledRect' not defined
-   324                                  
-   325 00000118 5E                          pop si
-   326 00000119 5A                          pop dx
-   327 0000011A 59                          pop cx
-   328 0000011B 5B                          pop bx
-   329 0000011C 58                          pop ax
-   330 0000011D C3                          ret
-   331                                  
-   332                                  ; ------------------------------------------------------------
-   333                                  ; drawPauseIcon
-   334                                  ; ------------------------------------------------------------
-   335                                  drawPauseIcon:
-   336 0000011E 50                          push ax
-   337 0000011F 53                          push bx
-   338 00000120 51                          push cx
-   339 00000121 52                          push dx
-   340 00000122 56                          push si
-   341                                  
-   342 00000123 83E806                      sub ax, 6
-   343 00000126 83EB06                      sub bx, 6
-   344 00000129 B90300                      mov cx, 3
-   345 0000012C BA0C00                      mov dx, 12
-   346                                      mov si, PAUSE_BTN_BORDER
-   346          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
-   347                                      call drawFilledRect
-   347          ******************       error: symbol `drawFilledRect' not defined
-   348                                      
-   349 0000012F 83C006                      add ax, 6
-   350 00000132 B90300                      mov cx, 3
-   351 00000135 BA0C00                      mov dx, 12
-   352                                      mov si, PAUSE_BTN_BORDER
-   352          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
-   353                                      call drawFilledRect
-   353          ******************       error: symbol `drawFilledRect' not defined
-   354                                  
-   355 00000138 5E                          pop si
-   356 00000139 5A                          pop dx
-   357 0000013A 59                          pop cx
-   358 0000013B 5B                          pop bx
-   359 0000013C 58                          pop ax
-   360 0000013D C3                          ret
-   361                                  
-   362                                  ; ------------------------------------------------------------
-   363                                  ; drawBalloon
-   364                                  ; INPUT: AX=x, BX=y, CL=color, DL=letter
-   365                                  ; ------------------------------------------------------------
-   366                                  drawBalloon:
-   367 0000013E 50                          push ax
-   368 0000013F 53                          push bx
-   369 00000140 51                          push cx
-   370 00000141 52                          push dx
-   371 00000142 56                          push si
-   372 00000143 57                          push di
-   373 00000144 55                          push bp
-   374                                  
-   375 00000145 89E5                        mov bp, sp
-   376 00000147 83EC08                      sub sp, 8
-   377 0000014A 8946FE                      mov [bp-2], ax          ; Save X
-   378 0000014D 895EFC                      mov [bp-4], bx          ; Save Y
-   379 00000150 884EFA                      mov [bp-6], cl          ; Save color
-   380 00000153 8856F8                      mov [bp-8], dl          ; Save letter
-   381                                  
-   382                                      ; Draw filled circle (balloon body)
-   383 00000156 8B46FE                      mov ax, [bp-2]
-   384 00000159 8B5EFC                      mov bx, [bp-4]
-   385 0000015C 83C30F                      add bx, 15              ; Offset for balloon center
-   386 0000015F B90F00                      mov cx, 15              ; Radius
-   387 00000162 8A56FA                      mov dl, byte [bp-6]     ; Color
-   388                                      call drawCircleFilled
-   388          ******************       error: symbol `drawCircleFilled' not defined
-   389                                  
-   390                                      ; Draw circle outline
-   391 00000165 8B46FE                      mov ax, [bp-2]
-   392 00000168 8B5EFC                      mov bx, [bp-4]
-   393 0000016B 83C30F                      add bx, 15
-   394 0000016E B90F00                      mov cx, 15
-   395                                      mov dl, [bold_leaves_green]
-   395          ******************       error: symbol `bold_leaves_green' not defined
-   396                                      call drawCircleOutline
-   396          ******************       error: symbol `drawCircleOutline' not defined
-   397                                  
-   398                                      ; Draw knot at top of balloon
-   399 00000171 8B46FE                      mov ax, [bp-2]
-   400 00000174 83E801                      sub ax, 1               ; Center the knot
-   401 00000177 8B5EFC                      mov bx, [bp-4]
-   402 0000017A 83C31E                      add bx, 30
-   403 0000017D B90300                      mov cx, 3
-   404 00000180 BA0200                      mov dx, 2
-   405 00000183 31F6                        xor si, si
-   406 00000185 8B76FA                      mov si, [bp-6]
-   407 00000188 81E6FF00                    and si, 0x00FF
-   408                                      call drawFilledRect
-   408          ******************       error: symbol `drawFilledRect' not defined
-   409                                  
-   410                                      ; Draw string
-   411 0000018C 8B46FE                      mov ax, [bp-2]
-   412 0000018F 8B5EFC                      mov bx, [bp-4]
-   413 00000192 83C320                      add bx, 32
-   414                                      mov dx, BALLOON_STRING_LEN
-   414          ******************       error: symbol `BALLOON_STRING_LEN' not defined
-   415                                      mov si, [bold_leaves_green]
-   415          ******************       error: symbol `bold_leaves_green' not defined
-   416 00000195 81E6FF00                    and si, 0x00FF
-   417                                      call drawVerticalLine
-   417          ******************       error: symbol `drawVerticalLine' not defined
-   418                                  
-   419                                      ; Draw letter on balloon
-   420 00000199 8B4EFE                      mov cx, [bp-2]
-   421 0000019C 83E904                      sub cx, 4               ; Center letter
-   422 0000019F 8B56FC                      mov dx, [bp-4]
-   423 000001A2 83C20C                      add dx, 12
-   424 000001A5 B702                        mov bh, 2               ; Scale
-   425                                      mov bl, [dark_brown]    ; Letter color
-   425          ******************       error: symbol `dark_brown' not defined
-   426                                      
-   427                                      ; Create single-char string
-   428 000001A7 50                          push ax
-   429 000001A8 83EC02                      sub sp, 2
-   430 000001AB 89E5                        mov bp, sp
-   431 000001AD 8A4602                      mov al, [bp+2]          ; Get saved letter
-   432 000001B0 884600                      mov [bp], al
-   433 000001B3 C6460100                    mov byte [bp+1], 0      ; Null terminator
-   434 000001B7 89EE                        mov si, bp
-   435                                      call drawText
-   435          ******************       error: symbol `drawText' not defined
-   436 000001B9 83C402                      add sp, 2
-   437 000001BC 58                          pop ax
-   438                                  
-   439 000001BD 83C408                      add sp, 8
-   440 000001C0 5D                          pop bp
-   441 000001C1 5F                          pop di
-   442 000001C2 5E                          pop si
-   443 000001C3 5A                          pop dx
-   444 000001C4 59                          pop cx
-   445 000001C5 5B                          pop bx
-   446 000001C6 58                          pop ax
-   447 000001C7 C3                          ret
-   448                                  
-   449                                  ; ============================================================
-   450                                  ; END OF main_game_screen.asm
-   451                                  ; ============================================================
+    13 00000007 E80B00                      call drawScorePanel
+    14 0000000A E89D00                      call drawTimerPanel
+    15                                      ;call drawSoundButton
+    16                                      ;call drawPauseButton
+    17                                  
+    18 0000000D 07                          pop es
+    19 0000000E 5F                          pop di
+    20 0000000F 5E                          pop si
+    21 00000010 5A                          pop dx
+    22 00000011 59                          pop cx
+    23 00000012 5B                          pop bx
+    24 00000013 58                          pop ax
+    25 00000014 C3                          ret
+    26                                  
+    27                                  ; ------------------------------------------------------------
+    28                                  ; drawScorePanel
+    29                                  ; ------------------------------------------------------------
+    30                                  drawScorePanel:
+    31 00000015 50                          push ax
+    32 00000016 53                          push bx
+    33 00000017 51                          push cx
+    34 00000018 52                          push dx
+    35 00000019 56                          push si
+    36 0000001A 57                          push di
+    37                                  
+    38                                      mov ax, SCORE_PANEL_X
+    38          ******************       error: symbol `SCORE_PANEL_X' not defined
+    39                                      mov bx, SCORE_PANEL_Y
+    39          ******************       error: symbol `SCORE_PANEL_Y' not defined
+    40                                      mov cx, SCORE_PANEL_WIDTH + 10
+    40          ******************       error: symbol `SCORE_PANEL_WIDTH' not defined
+    41                                      mov dx, SCORE_PANEL_HEIGHT
+    41          ******************       error: symbol `SCORE_PANEL_HEIGHT' not defined
+    42                                      mov si, SCORE_PANEL_COLOR
+    42          ******************       error: symbol `SCORE_PANEL_COLOR' not defined
+    43                                      mov di, SCORE_BORDER_COLOR
+    43          ******************       error: symbol `SCORE_BORDER_COLOR' not defined
+    44                                      call drawRoundedRect
+    44          ******************       error: symbol `drawRoundedRect' not defined
+    45                                  
+    46                                      mov cx, SCORE_TEXT_X
+    46          ******************       error: symbol `SCORE_TEXT_X' not defined
+    47                                      mov dx, SCORE_TEXT_Y
+    47          ******************       error: symbol `SCORE_TEXT_Y' not defined
+    48                                      mov si, score_label
+    48          ******************       error: symbol `score_label' not defined
+    49                                      mov bl, [dark_brown]
+    49          ******************       error: symbol `dark_brown' not defined
+    50 0000001B B701                        mov bh, 1
+    51                                      call drawText
+    51          ******************       error: symbol `drawText' not defined
+    52                                  
+    53 0000001D E82C00                      call drawScoreValue
+    54                                  
+    55 00000020 5F                          pop di
+    56 00000021 5E                          pop si
+    57 00000022 5A                          pop dx
+    58 00000023 59                          pop cx
+    59 00000024 5B                          pop bx
+    60 00000025 58                          pop ax
+    61 00000026 C3                          ret
+    62                                  
+    63                                  ; ------------------------------------------------------------
+    64                                  ; PUBLIC: drawScoreValue
+    65                                  ; Draws the current score at defined position
+    66                                  ; Called by drawScorePanel
+    67                                  ; ------------------------------------------------------------
+    68                                  drawScoreValue:
+    69 00000027 50                          push ax
+    70 00000028 53                          push bx
+    71 00000029 51                          push cx
+    72 0000002A 52                          push dx
+    73 0000002B 56                          push si
+    74 0000002C 57                          push di
+    75 0000002D 55                          push bp
+    76                                  
+    77                                      ; Allocate 5 bytes for "0000\0"
+    78 0000002E 83EC05                      sub sp, 5
+    79 00000031 89E5                        mov bp, sp          ; BP points to buffer
+    80                                  
+    81                                      mov ax, [current_score]  ; AX = current score
+    81          ******************       error: symbol `current_score' not defined
+    82                                  
+    83                                      ; --- Thousands digit ---
+    84 00000033 B9E803                      mov cx, 1000
+    85 00000036 31D2                        xor dx, dx
+    86 00000038 F7F1                        div cx                  ; AX / 1000 -> AX = quotient in AL, DX = remainder
+    87 0000003A 0430                        add al, '0'
+    88 0000003C 884600                      mov [bp], al            ; store thousands digit
+    89                                  
+    90                                      ; --- Hundreds digit ---
+    91 0000003F 89D0                        mov ax, dx               ; remainder from thousands division
+    92 00000041 B96400                      mov cx, 100
+    93 00000044 31D2                        xor dx, dx
+    94 00000046 F7F1                        div cx                   ; AX / 100 -> AL = hundreds, DX = remainder
+    95 00000048 0430                        add al, '0'
+    96 0000004A 884601                      mov [bp+1], al
+    97                                  
+    98                                      ; --- Tens digit ---
+    99 0000004D 89D0                        mov ax, dx               ; remainder from hundreds
+   100 0000004F B90A00                      mov cx, 10
+   101 00000052 31D2                        xor dx, dx
+   102 00000054 F7F1                        div cx                   ; AX / 10 -> AL = tens, DX = ones
+   103 00000056 0430                        add al, '0'
+   104 00000058 884602                      mov [bp+2], al
+   105                                  
+   106                                      ; --- Ones digit ---
+   107 0000005B 88D0                        mov al, dl               ; remainder from tens division
+   108 0000005D 0430                        add al, '0'
+   109 0000005F 884603                      mov [bp+3], al
+   110                                  
+   111                                      ; --- Null terminator ---
+   112 00000062 C6460400                    mov byte [bp+4], 0
+   113                                  
+   114                                      ; Draw score string
+   115                                      mov cx, SCORE_VALUE_X - 14
+   115          ******************       error: symbol `SCORE_VALUE_X' not defined
+   116                                      mov dx, SCORE_VALUE_Y - 2
+   116          ******************       error: symbol `SCORE_VALUE_Y' not defined
+   117 00000066 89EE                        mov si, bp
+   118                                      mov bl, [dark_brown]
+   118          ******************       error: symbol `dark_brown' not defined
+   119 00000068 B701                        mov bh, 1
+   120                                      call drawText
+   120          ******************       error: symbol `drawText' not defined
+   121                                  
+   122 0000006A 83C405                      add sp, 5
+   123 0000006D 5D                          pop bp
+   124 0000006E 5F                          pop di
+   125 0000006F 5E                          pop si
+   126 00000070 5A                          pop dx
+   127 00000071 59                          pop cx
+   128 00000072 5B                          pop bx
+   129 00000073 58                          pop ax
+   130 00000074 C3                          ret
+   131                                  
+   132                                  ;; ------------------------------------------------------------
+   133                                  ; drawTimerPanel
+   134                                  ; Draws timer panel with dynamic time display
+   135                                  ; ------------------------------------------------------------
+   136                                  drawTimerPanel:
+   137 00000075 50                          push ax
+   138 00000076 53                          push bx
+   139 00000077 51                          push cx
+   140 00000078 52                          push dx
+   141 00000079 56                          push si
+   142 0000007A 57                          push di
+   143                                  
+   144                                      ; Draw panel background
+   145                                      mov ax, TIMER_PANEL_X
+   145          ******************       error: symbol `TIMER_PANEL_X' not defined
+   146                                      mov bx, TIMER_PANEL_Y
+   146          ******************       error: symbol `TIMER_PANEL_Y' not defined
+   147                                      mov cx, TIMER_PANEL_WIDTH
+   147          ******************       error: symbol `TIMER_PANEL_WIDTH' not defined
+   148                                      mov dx, TIMER_PANEL_HEIGHT
+   148          ******************       error: symbol `TIMER_PANEL_HEIGHT' not defined
+   149                                      mov si, TIMER_PANEL_COLOR
+   149          ******************       error: symbol `TIMER_PANEL_COLOR' not defined
+   150                                      mov di, TIMER_BORDER_COLOR
+   150          ******************       error: symbol `TIMER_BORDER_COLOR' not defined
+   151                                      call drawRoundedRect
+   151          ******************       error: symbol `drawRoundedRect' not defined
+   152                                  
+   153                                      ; Draw "TIME:" label
+   154                                      mov cx, TIMER_TEXT_X
+   154          ******************       error: symbol `TIMER_TEXT_X' not defined
+   155                                      mov dx, TIMER_TEXT_Y
+   155          ******************       error: symbol `TIMER_TEXT_Y' not defined
+   156 0000007B BE[E100]                    mov si, timer_label_text
+   157                                      mov bl, [dark_brown]
+   157          ******************       error: symbol `dark_brown' not defined
+   158 0000007E B701                        mov bh, 1
+   159                                      call drawText
+   159          ******************       error: symbol `drawText' not defined
+   160                                  
+   161                                      ; Draw dynamic timer value (MM:SS)
+   162 00000080 E86500                      call drawTimerValue
+   163                                  
+   164 00000083 5F                          pop di
+   165 00000084 5E                          pop si
+   166 00000085 5A                          pop dx
+   167 00000086 59                          pop cx
+   168 00000087 5B                          pop bx
+   169 00000088 58                          pop ax
+   170 00000089 C3                          ret
+   171                                  
+   172                                  ; Timer label text (just "TIME:")
+   173 0000008A 54494D453A2000          timer_label_text    db "TIME: ", 0
+   174                                  
+   175                                  ; ------------------------------------------------------------
+   176                                  ; drawTimerValue
+   177                                  ; Draws the current timer value in MM:SS format
+   178                                  ; Called every frame by drawTimerPanel
+   179                                  ; Reads current values from timer_minutes and timer_display_sec
+   180                                  ; These variables are updated by the timer ISR (once per second)
+   181                                  ; ------------------------------------------------------------
+   182                                  drawTimerValue:
+   183 00000091 50                          push ax
+   184 00000092 53                          push bx
+   185 00000093 51                          push cx
+   186 00000094 52                          push dx
+   187 00000095 56                          push si
+   188 00000096 57                          push di
+   189 00000097 55                          push bp
+   190                                  
+   191                                      ; Allocate 6 bytes on stack for timer string "MM:SS\0"
+   192 00000098 83EC06                      sub sp, 6
+   193 0000009B 89E5                        mov bp, sp              ; BP points to buffer
+   194                                  
+   195                                      ; Build "MM:SS" string from current timer values
+   196                                      ; --- Minutes tens digit ---
+   197 0000009D 30E4                        xor ah, ah
+   198                                      mov al, [timer_minutes]
+   198          ******************       error: symbol `timer_minutes' not defined
+   199 0000009F B30A                        mov bl, 10
+   200 000000A1 F6F3                        div bl                  ; AL = tens, AH = ones
+   201 000000A3 0430                        add al, '0'             ; Convert to ASCII
+   202 000000A5 884600                      mov [bp], al            ; Store tens digit
+   203                                      
+   204                                      ; --- Minutes ones digit ---
+   205 000000A8 88E0                        mov al, ah              ; Get ones from AH
+   206 000000AA 0430                        add al, '0'
+   207 000000AC 884601                      mov [bp+1], al
+   208                                  
+   209                                      ; --- Colon separator ---
+   210 000000AF C646023A                    mov byte [bp+2], ':'
+   211                                  
+   212                                      ; --- Seconds tens digit ---
+   213 000000B3 30E4                        xor ah, ah
+   214                                      mov al, [timer_display_sec]
+   214          ******************       error: symbol `timer_display_sec' not defined
+   215 000000B5 B30A                        mov bl, 10
+   216 000000B7 F6F3                        div bl                  ; AL = tens, AH = ones
+   217 000000B9 0430                        add al, '0'
+   218 000000BB 884603                      mov [bp+3], al
+   219                                  
+   220                                      ; --- Seconds ones digit ---
+   221 000000BE 88E0                        mov al, ah
+   222 000000C0 0430                        add al, '0'
+   223 000000C2 884604                      mov [bp+4], al
+   224                                  
+   225                                      ; --- Null terminator ---
+   226 000000C5 C6460500                    mov byte [bp+5], 0
+   227                                  
+   228                                      ; Draw the timer string at defined position
+   229                                      mov cx, TIMER_VALUE_X
+   229          ******************       error: symbol `TIMER_VALUE_X' not defined
+   230                                      mov dx, TIMER_VALUE_Y
+   230          ******************       error: symbol `TIMER_VALUE_Y' not defined
+   231 000000C9 89EE                        mov si, bp              ; SI points to our string buffer
+   232                                      mov bl, [dark_brown]    ; Text color
+   232          ******************       error: symbol `dark_brown' not defined
+   233 000000CB B701                        mov bh, 1              ; Scale (2 = medium size)
+   234                                      call drawText
+   234          ******************       error: symbol `drawText' not defined
+   235                                  
+   236                                      ; Clean up stack
+   237 000000CD 83C406                      add sp, 6
+   238                                  
+   239 000000D0 5D                          pop bp
+   240 000000D1 5F                          pop di
+   241 000000D2 5E                          pop si
+   242 000000D3 5A                          pop dx
+   243 000000D4 59                          pop cx
+   244 000000D5 5B                          pop bx
+   245 000000D6 58                          pop ax
+   246 000000D7 C3                          ret
+   247                                  
+   248                                  ; ------------------------------------------------------------
+   249                                  ; drawSoundButton
+   250                                  ; ------------------------------------------------------------
+   251                                  drawSoundButton:
+   252 000000D8 50                          push ax
+   253 000000D9 53                          push bx
+   254 000000DA 51                          push cx
+   255 000000DB 52                          push dx
+   256                                  
+   257                                      mov ax, SOUND_BTN_X
+   257          ******************       error: symbol `SOUND_BTN_X' not defined
+   258                                      mov bx, SOUND_BTN_Y
+   258          ******************       error: symbol `SOUND_BTN_Y' not defined
+   259                                      mov cx, SOUND_BTN_RADIUS
+   259          ******************       error: symbol `SOUND_BTN_RADIUS' not defined
+   260                                      mov dl, SOUND_BTN_COLOR
+   260          ******************       error: symbol `SOUND_BTN_COLOR' not defined
+   261                                      call drawCircleFilled
+   261          ******************       error: symbol `drawCircleFilled' not defined
+   262                                  
+   263                                      mov ax, SOUND_BTN_X
+   263          ******************       error: symbol `SOUND_BTN_X' not defined
+   264                                      mov bx, SOUND_BTN_Y
+   264          ******************       error: symbol `SOUND_BTN_Y' not defined
+   265 000000DC 83C002                      add ax, 2
+   266 000000DF E8A600                      call drawSpeakerIcon
+   267                                  
+   268 000000E2 5A                          pop dx
+   269 000000E3 59                          pop cx
+   270 000000E4 5B                          pop bx
+   271 000000E5 58                          pop ax
+   272 000000E6 C3                          ret
+   273                                  
+   274                                  ; ------------------------------------------------------------
+   275                                  ; drawPauseButton
+   276                                  ; ------------------------------------------------------------
+   277                                  drawPauseButton:
+   278 000000E7 50                          push ax
+   279 000000E8 53                          push bx
+   280 000000E9 51                          push cx
+   281 000000EA 52                          push dx
+   282                                  
+   283                                      mov ax, PAUSE_BTN_X
+   283          ******************       error: symbol `PAUSE_BTN_X' not defined
+   284                                      mov bx, PAUSE_BTN_Y
+   284          ******************       error: symbol `PAUSE_BTN_Y' not defined
+   285                                      mov cx, PAUSE_BTN_RADIUS
+   285          ******************       error: symbol `PAUSE_BTN_RADIUS' not defined
+   286                                      mov dl, PAUSE_BTN_COLOR
+   286          ******************       error: symbol `PAUSE_BTN_COLOR' not defined
+   287                                      call drawCircleFilled
+   287          ******************       error: symbol `drawCircleFilled' not defined
+   288                                  
+   289                                      mov ax, PAUSE_BTN_X
+   289          ******************       error: symbol `PAUSE_BTN_X' not defined
+   290                                      mov bx, PAUSE_BTN_Y
+   290          ******************       error: symbol `PAUSE_BTN_Y' not defined
+   291 000000EB 83C002                      add ax, 2
+   292 000000EE E8C600                      call drawPauseIcon
+   293                                  
+   294 000000F1 5A                          pop dx
+   295 000000F2 59                          pop cx
+   296 000000F3 5B                          pop bx
+   297 000000F4 58                          pop ax
+   298 000000F5 C3                          ret
+   299                                  
+   300                                  ; ------------------------------------------------------------
+   301                                  ; drawSpeakerIcon
+   302                                  ; ------------------------------------------------------------
+   303                                  drawSpeakerIcon:
+   304 000000F6 50                          push ax
+   305 000000F7 53                          push bx
+   306 000000F8 51                          push cx
+   307 000000F9 52                          push dx
+   308 000000FA 56                          push si
+   309                                  
+   310 000000FB 83E806                      sub ax, 6
+   311 000000FE 83EB04                      sub bx, 4
+   312 00000101 B90500                      mov cx, 5
+   313 00000104 BA0800                      mov dx, 8
+   314                                      mov si, PAUSE_BTN_BORDER
+   314          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
+   315                                      call drawFilledRect
+   315          ******************       error: symbol `drawFilledRect' not defined
+   316                                      
+   317 00000107 83C008                      add ax, 8
+   318 0000010A 83C302                      add bx, 2
+   319 0000010D B90200                      mov cx, 2
+   320 00000110 BA0400                      mov dx, 4
+   321                                      mov si, PAUSE_BTN_BORDER
+   321          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
+   322                                      call drawFilledRect
+   322          ******************       error: symbol `drawFilledRect' not defined
+   323                                  
+   324 00000113 5E                          pop si
+   325 00000114 5A                          pop dx
+   326 00000115 59                          pop cx
+   327 00000116 5B                          pop bx
+   328 00000117 58                          pop ax
+   329 00000118 C3                          ret
+   330                                  
+   331                                  ; ------------------------------------------------------------
+   332                                  ; drawPauseIcon
+   333                                  ; ------------------------------------------------------------
+   334                                  drawPauseIcon:
+   335 00000119 50                          push ax
+   336 0000011A 53                          push bx
+   337 0000011B 51                          push cx
+   338 0000011C 52                          push dx
+   339 0000011D 56                          push si
+   340                                  
+   341 0000011E 83E806                      sub ax, 6
+   342 00000121 83EB06                      sub bx, 6
+   343 00000124 B90300                      mov cx, 3
+   344 00000127 BA0C00                      mov dx, 12
+   345                                      mov si, PAUSE_BTN_BORDER
+   345          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
+   346                                      call drawFilledRect
+   346          ******************       error: symbol `drawFilledRect' not defined
+   347                                      
+   348 0000012A 83C006                      add ax, 6
+   349 0000012D B90300                      mov cx, 3
+   350 00000130 BA0C00                      mov dx, 12
+   351                                      mov si, PAUSE_BTN_BORDER
+   351          ******************       error: symbol `PAUSE_BTN_BORDER' not defined
+   352                                      call drawFilledRect
+   352          ******************       error: symbol `drawFilledRect' not defined
+   353                                  
+   354 00000133 5E                          pop si
+   355 00000134 5A                          pop dx
+   356 00000135 59                          pop cx
+   357 00000136 5B                          pop bx
+   358 00000137 58                          pop ax
+   359 00000138 C3                          ret
+   360                                  
+   361                                  ; ============================================================
+   362                                  ; END OF main_game_screen.asm
+   363                                  ; ============================================================

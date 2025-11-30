@@ -21,9 +21,6 @@ showPauseScreen:
     call drawPauseTitle
     call drawPauseMenu
 
-    ; Small delay for animation smoothness
-    call screenDelay
-
     pop ds
     pop di
     pop si

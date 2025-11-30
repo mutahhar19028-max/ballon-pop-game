@@ -1,0 +1,135 @@
+     1                                  ; ============================================================================
+     2                                  ; drawBalloon - ADJUSTED FOR 24x21 pixels
+     3                                  ; ============================================================================
+     4                                  ; INPUT: AX=x, BX=y, CL=color, DL=letter
+     5                                  ; Draws a wider balloon perfect for 8x8 character at scale 1
+     6                                  ; ============================================================================
+     7                                  drawBalloon:
+     8 00000000 50                          push ax
+     9 00000001 53                          push bx
+    10 00000002 51                          push cx
+    11 00000003 52                          push dx
+    12 00000004 56                          push si
+    13 00000005 57                          push di
+    14 00000006 55                          push bp
+    15                                  
+    16 00000007 89E5                        mov bp, sp
+    17 00000009 83EC08                      sub sp, 8
+    18 0000000C 8946FE                      mov [bp-2], ax          ; Save X
+    19 0000000F 895EFC                      mov [bp-4], bx          ; Save Y
+    20 00000012 884EFA                      mov [bp-6], cl          ; Save color
+    21 00000015 8856F8                      mov [bp-8], dl          ; Save letter
+    22                                  
+    23                                      ; Draw balloon body (oval shape using filled circle)
+    24 00000018 8B46FE                      mov ax, [bp-2]
+    25 0000001B 83C00C                      add ax, 12              ; Center X (24/2 = 12)
+    26 0000001E 8B5EFC                      mov bx, [bp-4]
+    27 00000021 83C308                      add bx, 8               ; Center Y (16/2 = 8, for body height)
+    28 00000024 B90700                      mov cx, 7               ; Radius for oval
+    29 00000027 8A56FA                      mov dl, byte [bp-6]
+    30                                      call drawCircleFilled
+    30          ******************       error: symbol `drawCircleFilled' not defined
+    31                                  
+    32                                      ; Draw wider horizontal lines to make it oval (not perfectly round)
+    33                                      ; Middle horizontal line (widest part)
+    34 0000002A 8B46FE                      mov ax, [bp-2]
+    35 0000002D 83C002                      add ax, 2
+    36 00000030 8B5EFC                      mov bx, [bp-4]
+    37 00000033 83C308                      add bx, 8               ; Middle Y
+    38 00000036 B91400                      mov cx, 20              ; Width of oval
+    39 00000039 31F6                        xor si, si
+    40 0000003B 8B76FA                      mov si, [bp-6]
+    41 0000003E 81E6FF00                    and si, 0x00FF
+    42                                      call drawHorizontalLine
+    42          ******************       error: symbol `drawHorizontalLine' not defined
+    43                                  
+    44                                      ; Upper-middle horizontal line
+    45 00000042 8B46FE                      mov ax, [bp-2]
+    46 00000045 83C003                      add ax, 3
+    47 00000048 8B5EFC                      mov bx, [bp-4]
+    48 0000004B 83C306                      add bx, 6
+    49 0000004E B91200                      mov cx, 18
+    50 00000051 31F6                        xor si, si
+    51 00000053 8B76FA                      mov si, [bp-6]
+    52 00000056 81E6FF00                    and si, 0x00FF
+    53                                      call drawHorizontalLine
+    53          ******************       error: symbol `drawHorizontalLine' not defined
+    54                                  
+    55                                      ; Lower-middle horizontal line
+    56 0000005A 8B46FE                      mov ax, [bp-2]
+    57 0000005D 83C003                      add ax, 3
+    58 00000060 8B5EFC                      mov bx, [bp-4]
+    59 00000063 83C30A                      add bx, 10
+    60 00000066 B91200                      mov cx, 18
+    61 00000069 31F6                        xor si, si
+    62 0000006B 8B76FA                      mov si, [bp-6]
+    63 0000006E 81E6FF00                    and si, 0x00FF
+    64                                      call drawHorizontalLine
+    64          ******************       error: symbol `drawHorizontalLine' not defined
+    65                                  
+    66                                      ; Draw balloon outline (darker shade for definition)
+    67 00000072 8B46FE                      mov ax, [bp-2]
+    68 00000075 83C00C                      add ax, 12
+    69 00000078 8B5EFC                      mov bx, [bp-4]
+    70 0000007B 83C308                      add bx, 8
+    71 0000007E B90700                      mov cx, 7
+    72                                      mov dl, [dark_brown]    ; Dark outline
+    72          ******************       error: symbol `dark_brown' not defined
+    73                                      call drawCircleOutline
+    73          ******************       error: symbol `drawCircleOutline' not defined
+    74                                  
+    75                                      ; Draw knot (small rectangle at bottom of balloon)
+    76 00000081 8B46FE                      mov ax, [bp-2]
+    77 00000084 83C00A                      add ax, 10              ; Center knot (24/2 - 2 = 10)
+    78 00000087 8B5EFC                      mov bx, [bp-4]
+    79 0000008A 83C310                      add bx, 16              ; Below balloon body
+    80 0000008D B90400                      mov cx, 4               ; Width
+    81 00000090 BA0400                      mov dx, 4               ; Height
+    82 00000093 31F6                        xor si, si
+    83 00000095 8B76FA                      mov si, [bp-6]
+    84 00000098 81E6FF00                    and si, 0x00FF
+    85                                      call drawFilledRect
+    85          ******************       error: symbol `drawFilledRect' not defined
+    86                                  
+    87                                      ; Draw string (vertical line)
+    88 0000009C 8B46FE                      mov ax, [bp-2]
+    89 0000009F 83C00C                      add ax, 12              ; Center string (24/2 = 12)
+    90 000000A2 8B5EFC                      mov bx, [bp-4]
+    91 000000A5 83C312                      add bx, 18              ; Below knot
+    92 000000A8 BA0300                      mov dx, 3               ; String length
+    93 000000AB 31F6                        xor si, si
+    94                                      mov si, [dark_brown]    ; Dark string
+    94          ******************       error: symbol `dark_brown' not defined
+    95 000000AD 81E6FF00                    and si, 0x00FF
+    96                                      call drawVerticalLine
+    96          ******************       error: symbol `drawVerticalLine' not defined
+    97                                  
+    98                                      ; Draw letter on balloon (8x8 at scale 1)
+    99 000000B1 8B4EFE                      mov cx, [bp-2]
+   100 000000B4 83C109                      add cx, 9               ; Center letter X (24/2 - 8/2 = 8)
+   101 000000B7 8B56FC                      mov dx, [bp-4]
+   102 000000BA 83C203                      add dx, 3               ; Center letter Y
+   103 000000BD B701                        mov bh, 1               ; Scale 1 (8x8 pixels)
+   104                                      mov bl, [dark_brown]    ; Dark letter color for contrast
+   104          ******************       error: symbol `dark_brown' not defined
+   105                                      
+   106                                      ; Create single-char string
+   107 000000BF 83EC02                      sub sp, 2
+   108 000000C2 89E7                        mov di, sp
+   109 000000C4 8A46F8                      mov al, [bp-8]          ; Get letter
+   110 000000C7 8805                        mov [di], al
+   111 000000C9 C6450100                    mov byte [di+1], 0      ; Null terminator
+   112 000000CD 89FE                        mov si, di
+   113                                      call drawText
+   113          ******************       error: symbol `drawText' not defined
+   114 000000CF 83C402                      add sp, 2
+   115                                  
+   116 000000D2 83C408                      add sp, 8
+   117 000000D5 5D                          pop bp
+   118 000000D6 5F                          pop di
+   119 000000D7 5E                          pop si
+   120 000000D8 5A                          pop dx
+   121 000000D9 59                          pop cx
+   122 000000DA 5B                          pop bx
+   123 000000DB 58                          pop ax
+   124 000000DC C3                          ret

@@ -22,9 +22,6 @@ showGameOverScreen:
     call drawGameOverTitle
     call drawGameOverMenu
 
-    ; Small delay for animation smoothness
-    call screenDelay
-
     pop ds
     pop di
     pop si

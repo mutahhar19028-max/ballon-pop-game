@@ -8,7 +8,7 @@
 ; ------------------------------------------------------------
 ; BALLOON CONSTANTS
 ; ------------------------------------------------------------
-%define MAX_BALLOONS        3
+%define MAX_BALLOONS        9
 %define BALLOON_WIDTH       24              ; Pixels wide
 %define BALLOON_HEIGHT      21              ; Pixels tall
 %define BALLOON_STRING_LEN  2
@@ -19,8 +19,8 @@
 %define MAX_SPAWN_X         286             ; 320 - 16 = 304
 
 %define BALLOON_SPEED       1
-%define MOVEMENT_DELAY      100               ; Move every 3 frames (slower!)
-%define SPAWN_DELAY         40
+%define MOVEMENT_DELAY      3               ; Move every 3 frames (slower!)
+%define SPAWN_DELAY         100
 
 ; Buffer size per balloon: 16 * 14 = 224 bytes
 %define BUFFER_SIZE         504

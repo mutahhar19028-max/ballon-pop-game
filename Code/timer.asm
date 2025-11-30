@@ -12,6 +12,8 @@
 
 %define TICKS_PER_SEC   18      ; Default: 18.2 Hz, we'll use 18 for simplicity
 %define GAME_TIME_SEC   120     ; 2 minutes = 120 seconds
+ticks       dw 0            ; global tick counter
+
 
 ; ------------------------------------------------------------
 ; TIMER VARIABLES
@@ -98,7 +100,7 @@ timerISR:
     push di
     push ds
     push es
-    
+
     ; Set DS to our data segment
     mov ax, cs
     mov ds, ax
@@ -120,6 +122,7 @@ timerISR:
     je .timer_expired       ; Already at 0
 
     dec word [timer_seconds]
+    inc word [ticks]
 
     ; Update display format (MM:SS)
     call updateTimerDisplay

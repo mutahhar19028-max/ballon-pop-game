@@ -633,18 +633,25 @@ drawSelectionArrow:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; screenDelay
-; Small delay for smooth animation (adjust for desired FPS)
-; ------------------------------------------------------------
-screenDelay:
-    push cx
-    mov cx, 0x6000
-.delay_loop:
-    nop
-    loop .delay_loop
-    pop cx
+
+    
+wait_vsync:
+    mov dx, 03DAh
+
+; wait until retrace is ACTIVE
+.l1:
+    in al, dx
+    test al, 08h
+    jz .l1
+
+; wait until retrace is INACTIVE
+.l2:
+    in al, dx
+    test al, 08h
+    jnz .l2
+
     ret
+
 
 ; ------------------------------------------------------------
 ; drawCircleOutline - FIXED VERSION (8088 Compatible)

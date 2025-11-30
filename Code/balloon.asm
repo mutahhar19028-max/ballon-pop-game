@@ -97,9 +97,9 @@ drawBalloon:
 
     ; Draw letter on balloon (8x8 at scale 1)
     mov cx, [bp-2]
-    add cx, 8               ; Center letter X (24/2 - 8/2 = 8)
+    add cx, 9               ; Center letter X (24/2 - 8/2 = 8)
     mov dx, [bp-4]
-    add dx, 4               ; Center letter Y
+    add dx, 3               ; Center letter Y
     mov bh, 1               ; Scale 1 (8x8 pixels)
     mov bl, [dark_brown]    ; Dark letter color for contrast
     

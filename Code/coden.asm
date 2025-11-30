@@ -129,7 +129,7 @@ game_loop:
     je .pause_from_game
 
 .game_tick_end:
-    call screenDelay
+    call wait_vsync
     jmp .enter_game_draw
 
 

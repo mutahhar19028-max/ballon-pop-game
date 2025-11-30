@@ -127,6 +127,7 @@ handleMainMenuInput:
 ; executeMenuChoice — ONLY CHANGES STATE
 ; ------------------------------------------------------------
 executeMenuChoice:
+
     cmp al, MENU_OPTION_PLAY
     je .start
 
@@ -140,14 +141,17 @@ executeMenuChoice:
 
 .start:
     mov byte [game_state], STATE_GAME
+    call showBackground320x200
     ret
 
 .help:
     mov byte [game_state], STATE_HELP
+    call showBackground320x200
     ret
 
 .exit:
     mov byte [game_state], STATE_EXIT
+    call showBackground320x200
     ret
 
 
@@ -191,12 +195,11 @@ showHelpScreen:
     mov bh, 1 
     call drawText
 
-    
-
     mov ah, 0x00
     int 0x16        ; Wait for key
 
     mov byte [game_state], STATE_MENU ; only change state
+    call showBackground320x200
     ret
 
 ; Help screen text

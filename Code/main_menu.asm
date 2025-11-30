@@ -53,7 +53,7 @@ drawMainMenu:
     ; ------------------------------------------------------------
     mov  ax, MENU_BUTTON_X - 7
     mov  bx, MENU_BUTTON_Y - 2
-    add  bx, [DISP]
+    add  bx, [DIT]
     mov  cx, MENU_BUTTON_WIDTH + 15
     mov  dx, MENU_BUTTON_HEIGHT + 4
     mov  si, [dark_orange]
@@ -67,7 +67,7 @@ drawMainMenu:
 
     mov  ax, MENU_BUTTON_Y
     add  ax, MENU_BUTTON_HEIGHT / 4
-    add  ax, [DISP]
+    add  ax, [DIT]
     mov  dx, ax
 
     mov  si, menu_help
@@ -82,7 +82,7 @@ drawMainMenu:
     ; ------------------------------------------------------------
     mov  ax, MENU_BUTTON_X - 7
     mov  bx, MENU_BUTTON_Y - 2
-    add  bx, [DISP]
+    add  bx, [DIT]
     mov  cx, MENU_BUTTON_WIDTH + 15
     mov  dx, MENU_BUTTON_HEIGHT + 4
     mov  si, [dark_orange]
@@ -96,7 +96,7 @@ drawMainMenu:
 
     mov  ax, MENU_BUTTON_Y
     add  ax, MENU_BUTTON_HEIGHT / 4
-    add  ax, [DISP]
+    add  ax, [DIT]
     mov  dx, ax
 
     mov  si, menu_exit
@@ -119,8 +119,10 @@ drawMainMenu:
 ; UPDATE PADDING
 ; ------------------------------------------------------------
 updatePadding:
-    mov  ax, [DISP]
+    mov  ax, [DIT]
     add  ax, MENU_BUTTON_HEIGHT
     add  ax, MENU_BUTTON_HEIGHT / 2
-    mov  [DISP], ax
+    mov  [DIT], ax
     ret
+
+DIT : dw 0

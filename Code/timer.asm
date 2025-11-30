@@ -98,9 +98,7 @@ timerISR:
     push di
     push ds
     push es
-
-    add word[current_score], 2
-
+    
     ; Set DS to our data segment
     mov ax, cs
     mov ds, ax

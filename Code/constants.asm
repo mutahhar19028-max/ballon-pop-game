@@ -158,7 +158,7 @@ DIS : dw 0
 %define BASE_RADIUS 10
 
 ; === SCORE PANEL ===
-%define SCORE_PANEL_X       (MAX_WIDTH / 2) -  (SCORE_PANEL_WIDTH / 2) - 8 * PADDING
+%define SCORE_PANEL_X       (MAX_WIDTH / 2) -  (SCORE_PANEL_WIDTH / 2) - 8 * PADDING - 20
 %define SCORE_PANEL_Y       2 * PADDING
 %define SCORE_PANEL_WIDTH   BOX_WIDTH
 %define SCORE_PANEL_HEIGHT  BOX_HEIGHT
@@ -246,3 +246,17 @@ temp_color  db 0    ; Temporary storage for circle fill color
 ; Global variables
 current_selection   db 0        ; Currently selected menu option (0-2)
 game_state          db STATE_MENU
+
+
+; ============================================================================
+; BALLOON CONSTANTS - Add/Update these in constants.asm
+; ============================================================================
+
+; === BALLOONS === (NEW - Add this section)
+%define BALLOON_WIDTH       16              ; Total balloon width
+%define BALLOON_HEIGHT      14              ; Total balloon height (body + knot + string)
+%define BALLOON_BODY_HEIGHT 10              ; Just the oval body
+%define BALLOON_STRING_LEN  2               ; Very short string
+
+; Note: If you already have BALLOON_STRING_LEN defined elsewhere,
+; update it to 2 instead of 18

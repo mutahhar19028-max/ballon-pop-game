@@ -10,11 +10,11 @@ showMainGameScreen:
     push di
     push es
 
-    call drawSampleBalloons
     call drawScorePanel
     call drawTimerPanel
     call drawSoundButton
     call drawPauseButton
+    ; NOTE: Balloons now drawn by balloon system, not here
 
     pop es
     pop di
@@ -38,7 +38,7 @@ drawScorePanel:
 
     mov ax, SCORE_PANEL_X
     mov bx, SCORE_PANEL_Y
-    mov cx, SCORE_PANEL_WIDTH
+    mov cx, SCORE_PANEL_WIDTH + 8
     mov dx, SCORE_PANEL_HEIGHT
     mov si, SCORE_PANEL_COLOR
     mov di, SCORE_BORDER_COLOR
@@ -113,8 +113,8 @@ drawScoreValue:
     mov byte [bp+4], 0
 
     ; Draw score string
-    mov cx, SCORE_VALUE_X
-    mov dx, SCORE_VALUE_Y
+    mov cx, SCORE_VALUE_X - 14
+    mov dx, SCORE_VALUE_Y - 2
     mov si, bp
     mov bl, [dark_brown]
     mov bh, 1
@@ -245,6 +245,7 @@ drawTimerValue:
     pop bx
     pop ax
     ret
+
 ; ------------------------------------------------------------
 ; drawSoundButton
 ; ------------------------------------------------------------
@@ -270,7 +271,6 @@ drawSoundButton:
     pop bx
     pop ax
     ret
-
 
 ; ------------------------------------------------------------
 ; drawPauseButton
@@ -353,127 +353,6 @@ drawPauseIcon:
     call drawFilledRect
 
     pop si
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret
-
-; ------------------------------------------------------------
-; drawBalloon
-; ------------------------------------------------------------
-drawBalloon:
-    push ax
-    push bx
-    push cx
-    push dx
-    push si
-    push di
-    push bp
-
-    mov bp, sp
-    sub sp, 8
-    mov [bp-2], ax
-    mov [bp-4], bx
-    mov [bp-6], cl
-    mov [bp-8], dl
-
-    mov ax, [bp-2]
-    mov bx, [bp-4]
-    add bx, 15
-    mov cx, 15
-    mov dl, byte [bp-6]
-    call drawCircleFilled
-
-    mov ax, [bp-2]
-    mov bx, [bp-4]
-    add bx, 15
-    mov cx, 15
-    mov dl, [bold_leaves_green]
-    call drawCircleOutline
-
-    mov ax, [bp-2]
-    mov bx, [bp-4]
-    add bx, 30
-    mov cx, 3
-    mov dx, 2
-    mov si, [bp-6]
-    call drawFilledRect
-
-    mov ax, [bp-2]
-    mov bx, [bp-4]
-    add bx, 32
-    mov dx, BALLOON_STRING_LEN
-    mov si, [bold_leaves_green]
-    call drawVerticalLine
-
-    mov ax, [bp-2]
-    sub ax, 4
-    mov bx, [bp-4]
-    add bx, 12
-    mov al, byte [bp-8]
-    cmp al, '0'
-    jb .draw_as_char
-    cmp al, '9'
-    ja .draw_as_char
-    
-    sub al, '0'
-    mov dl, [bold_leaves_green]
-    ;call drawDigit
-    jmp .done
-
-.draw_as_char:
-    mov cx, [bp-2]
-    mov dx, [bp-4]
-    mov bh, 1
-    mov bl, [bp-6]
-    mov si, [bp-8]
-    call drawText
-
-.done:
-    add sp, 8
-    pop bp
-    pop di
-    pop si
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret
-
-; ------------------------------------------------------------
-; drawSampleBalloons
-; ------------------------------------------------------------
-drawSampleBalloons:
-    push ax
-    push bx
-    push cx
-    push dx
-
-    mov ax, 80
-    mov bx, 100
-    mov cl, [white]
-    mov dl, '1'
-    call drawBalloon
-
-    mov ax, 130
-    mov bx, 140
-    mov cl, [light_blue]
-    mov dl, '2'
-    call drawBalloon
-
-    mov ax, 200
-    mov bx, 70
-    mov cl, [bright_cyan]
-    mov dl, '3'
-    call drawBalloon
-
-    mov ax, 260
-    mov bx, 110
-    mov cl, [bright_yellow]
-    mov dl, '4'
-    call drawBalloon
-
     pop dx
     pop cx
     pop bx

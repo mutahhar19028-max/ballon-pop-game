@@ -24,7 +24,7 @@ playCompletionSound:
     lodsw                  ; AX = frequency
     or  ax, ax
     jz  .done
-    call playTone
+    call playTune
     loop .loopNotes
 
 .done:
@@ -36,9 +36,9 @@ playCompletionSound:
     ret
 
 ; ---------------------------------------
-; playTone — AX = frequency (Hz)
+; playTune — AX = frequency (Hz)
 ; ---------------------------------------
-playTone:
+playTune:
     push ax
     push bx
     push cx

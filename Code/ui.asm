@@ -639,7 +639,7 @@ drawSelectionArrow:
 ; ------------------------------------------------------------
 screenDelay:
     push cx
-    mov cx, 0x1000
+    mov cx, 0x6000
 .delay_loop:
     nop
     loop .delay_loop

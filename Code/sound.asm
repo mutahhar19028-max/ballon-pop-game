@@ -1,16 +1,10 @@
-; sound.asm — PC Speaker victory sound
-; Compatible with NASM (COM or EXE)
-
 melodyFreqs:
     dw 800, 900, 1000, 1100, 1200, 1300, 1400, 1500
     dw 1500, 1400, 1300, 1200, 1100, 1000, 900, 800
 numNotes    equ 16
 tempo       dw 2
-pit_constant: dd 1193180    ; Store as 32-bit constant
+pit_constant: dd 1193180
 
-; ---------------------------------------
-; playCompletionSound — main entry
-; ---------------------------------------
 playCompletionSound:
     push ax
     push bx
@@ -21,7 +15,7 @@ playCompletionSound:
     mov si, melodyFreqs
     mov cx, numNotes
 .loopNotes:
-    lodsw                  ; AX = frequency
+    lodsw
     or  ax, ax
     jz  .done
     call playTune
@@ -35,42 +29,33 @@ playCompletionSound:
     pop ax
     ret
 
-; ---------------------------------------
-; playTune — AX = frequency (Hz)
-; ---------------------------------------
 playTune:
     push ax
     push bx
     push cx
     push dx
 
-    mov bx, ax              ; Save frequency in BX
+    mov bx, ax
     
-    ; Load 1193180 into DX:AX
-    mov ax, word [pit_constant]      ; Low word
-    mov dx, word [pit_constant + 2]  ; High word
+    mov ax, word [pit_constant]
+    mov dx, word [pit_constant + 2]
     
-    ; Divide DX:AX by BX -> quotient in AX
-    div bx                  ; DX:AX / BX = AX (remainder in DX)
-    mov bx, ax              ; BX = divisor
+    div bx
+    mov bx, ax
 
-    ; Program PIT channel 2
     mov al, 0xB6
     out 0x43, al
     mov ax, bx
-    out 0x42, al            ; low byte
+    out 0x42, al
     mov al, ah
-    out 0x42, al            ; high byte
+    out 0x42, al
 
-    ; Enable speaker
     in al, 0x61
     or al, 3
     out 0x61, al
 
-    ; Hold tone
     call toneDelay
 
-    ; Disable speaker
     in al, 0x61
     and al, 0xFC
     out 0x61, al
@@ -81,9 +66,6 @@ playTune:
     pop ax
     ret
 
-; ---------------------------------------
-; toneDelay — simple busy wait
-; ---------------------------------------
 toneDelay:
     push cx
     push dx

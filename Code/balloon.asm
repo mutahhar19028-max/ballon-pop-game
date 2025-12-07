@@ -1,8 +1,3 @@
-; ============================================================================
-; drawBalloon - Fixed color usage with provided palette
-; ============================================================================
-; INPUT: AX=x, BX=y, CL=color_index, DL=letter
-; ============================================================================
 drawBalloon:
     push ax
     push bx
@@ -13,40 +8,35 @@ drawBalloon:
     push bp
 
     mov bp, sp
-    sub sp, 10              ; Increased space for circle_color
-    mov [bp-2], ax          ; Save X
-    mov [bp-4], bx          ; Save Y
-    mov [bp-6], cl          ; Save color index (0-7)
-    mov [bp-8], dl          ; Save letter
+    sub sp, 10
+    mov [bp-2], ax
+    mov [bp-4], bx
+    mov [bp-6], cl
+    mov [bp-8], dl
 
-    ; Get actual color for balloon body from balloon_colors table
     mov cl, [bp-6]
     and cl, 0x07
     mov si, balloon_colors
     add si, cx
-    mov cl, [si]            ; CL = balloon color
-    mov [bp-10], cl         ; Save balloon body color
+    mov cl, [si]
+    mov [bp-10], cl
 
-    ; Get random color for filled circle
     call getRandomNumber
-    mov bx, 6               ; 6 colors in balloon_colors
+    mov bx, 6
     xor dx, dx
-    div bx                  ; DX = random index (0-5)
+    div bx
     mov si, balloon_colors
     add si, dx
-    mov dl, [si]            ; DL = random circle color
+    mov dl, [si]
 
-    ; Draw balloon body (oval) with RANDOM color
     mov ax, [bp-2]
     add ax, 12
     mov bx, [bp-4]
     add bx, 8
     mov cx, 7
-    ; DL already contains random color
     call drawCircleFilled
 
-    ; Draw wider horizontal lines for oval shape (use body color)
-    mov cl, [bp-10]         ; Restore body color
+    mov cl, [bp-10]
     
     mov ax, [bp-2]
     add ax, 2
@@ -72,7 +62,6 @@ drawBalloon:
     mov si, cx
     call drawHorizontalLine
 
-    ; Draw balloon outline in dark brown
     mov ax, [bp-2]
     add ax, 12
     mov bx, [bp-4]
@@ -81,7 +70,6 @@ drawBalloon:
     mov dl, [dark_brown]
     call drawCircleOutline
 
-    ; Draw knot rectangle in light orange
     mov ax, [bp-2]
     add ax, 10
     mov bx, [bp-4]
@@ -91,7 +79,6 @@ drawBalloon:
     mov si, [light_orange]
     call drawFilledRect
 
-    ; Draw string in dark brown
     mov ax, [bp-2]
     add ax, 12
     mov bx, [bp-4]
@@ -100,13 +87,12 @@ drawBalloon:
     mov si, [dark_brown]
     call drawVerticalLine
 
-    ; Draw letter on balloon (8x8 at scale 1) in white
     mov cx, [bp-2]
     add cx, 9
     mov dx, [bp-4]
     add dx, 3
-    mov bh, 1          ; Scale
-    mov bl, [dark_brown]    ; Letter color
+    mov bh, 1
+    mov bl, [dark_brown]
 
     sub sp, 2
     mov di, sp
@@ -117,7 +103,7 @@ drawBalloon:
     call drawText
     add sp, 2
 
-    add sp, 10              ; Match increased space
+    add sp, 10
     pop bp
     pop di
     pop si

@@ -1,65 +1,30 @@
-; ============================================================================
-; balloon_system.asm — Balloon System with Background Buffer
-; ============================================================================
-; Uses background buffering to avoid redrawing entire screen
-; Saves pixels before drawing, restores them before moving
-; ============================================================================
-
-; ------------------------------------------------------------
-; BALLOON CONSTANTS
-; ------------------------------------------------------------
 %define MAX_BALLOONS        9
-%define BALLOON_WIDTH       24              ; Pixels wide
-%define BALLOON_HEIGHT      21              ; Pixels tall
+%define BALLOON_WIDTH       24
+%define BALLOON_HEIGHT      21
 %define BALLOON_STRING_LEN  2
 
-%define SPAWN_Y             186             ; 200 - 14 = 186 (bottom)
+%define SPAWN_Y             186
 %define DESPAWN_Y           40
 %define MIN_SPAWN_X         30
-%define MAX_SPAWN_X         286             ; 320 - 16 = 304
+%define MAX_SPAWN_X         286
 
 %define BALLOON_SPEED       1
-%define MOVEMENT_DELAY      3               ; Move every 3 frames (slower!)
+%define MOVEMENT_DELAY      3
 %define SPAWN_DELAY         100
 
-; Buffer size per balloon: 16 * 14 = 224 bytes
 %define BUFFER_SIZE         504
 
-; Balloon colors (8 vibrant colors from your palette)
 balloon_colors:
     db baby_light_light_blue, violet, grey, bright_cyan, light_orange, bright_yellow
-; ------------------------------------------------------------
-; BALLOON DATA STRUCTURE (16 bytes per balloon)
-; ------------------------------------------------------------
-; Offset | Size | Description
-; -------+------+---------------------------
-; +0     | 2    | x_position (word)
-; +2     | 2    | y_position (word)
-; +4     | 1    | letter (byte, ASCII 'A'-'Z')
-; +5     | 1    | color_index (byte, 0-7)
-; +6     | 1    | active_flag (byte, 0=inactive, 1=active)
-; +7     | 1    | speed (byte, pixels/frame)
-; +8     | 2    | buffer_offset (word, pointer to background buffer)
-; +10-15 | 6    | Reserved
-; ------------------------------------------------------------
 
 balloon_array:      times (MAX_BALLOONS * 16) db 0
 balloon_count:      db 0
 spawn_timer:        dw 0
 random_seed:        dw 0
-movement_counter:   db 0        ; NEW: Frame counter for slower movement
+movement_counter:   db 0
 
-; Background buffer: 10 balloons × 224 bytes = 2240 bytes
 background_buffer:  times (MAX_BALLOONS * BUFFER_SIZE) db 0
 
-
-; ============================================================================
-; PUBLIC API FUNCTIONS
-; ============================================================================
-
-; ------------------------------------------------------------
-; initBalloonSystem
-; ------------------------------------------------------------
 initBalloonSystem:
     push ax
     push bx
@@ -67,7 +32,6 @@ initBalloonSystem:
     push di
     push es
 
-    ; Clear balloon array
     mov ax, ds
     mov es, ax
     mov di, balloon_array
@@ -75,23 +39,20 @@ initBalloonSystem:
     xor al, al
     rep stosb
 
-    ; Initialize buffer offsets for each balloon
     mov si, balloon_array
-    mov ax, 0                   ; Buffer offset starts at 0
+    mov ax, 0
     mov cx, MAX_BALLOONS
 
 .init_buffers:
-    mov [si+8], ax              ; Store buffer offset
-    add ax, BUFFER_SIZE         ; Next buffer
-    add si, 16                  ; Next balloon
+    mov [si+8], ax
+    add ax, BUFFER_SIZE
+    add si, 16
     loop .init_buffers
 
-    ; Reset counters
     mov byte [balloon_count], 0
     mov word [spawn_timer], 0
-    mov byte [movement_counter], 0  ; Reset movement counter
+    mov byte [movement_counter], 0
 
-    ; Seed random
     mov ah, 0x00
     int 0x1A
     mov [random_seed], dx
@@ -103,20 +64,14 @@ initBalloonSystem:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; updateBalloons
-; ------------------------------------------------------------
 updateBalloons:
     push ax
     push bx
     push cx
     push dx
 
-    ; Restore old backgrounds first
     call restoreAllBackgrounds
 
-    ; Check spawn timer
     inc word [spawn_timer]
     mov ax, [spawn_timer]
     cmp ax, SPAWN_DELAY
@@ -126,20 +81,17 @@ updateBalloons:
     mov word [spawn_timer], 0
 
 .skip_spawn:
-    ; Check movement timer (move every N frames)
     inc byte [movement_counter]
     mov al, [movement_counter]
     cmp al, MOVEMENT_DELAY
     jb .skip_move
     
     mov byte [movement_counter], 0
-    call moveBalloons           ; Only move every MOVEMENT_DELAY frames
+    call moveBalloons
     
 .skip_move:
-    ; Remove off-screen balloons
     call removeOffscreenBalloons
 
-    ; Save new backgrounds
     call saveAllBackgrounds
 
     pop dx
@@ -148,10 +100,6 @@ updateBalloons:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; renderBalloons
-; ------------------------------------------------------------
 renderBalloons:
     push ax
     push bx
@@ -164,18 +112,15 @@ renderBalloons:
     mov cx, MAX_BALLOONS
 
 .render_loop:
-    ; Check active flag
     mov al, [si+6]
     cmp al, 1
     jne .next_balloon
 
-    ; Get balloon data
-    mov ax, [si+0]              ; X position
-    mov bx, [si+2]              ; Y position
-    mov dl, [si+4]              ; Letter
-    mov dh, [si+5]              ; Color index
+    mov ax, [si+0]
+    mov bx, [si+2]
+    mov dl, [si+4]
+    mov dh, [si+5]
 
-    ; Get actual color
     push si
     push cx
     xor ch, ch
@@ -187,7 +132,6 @@ renderBalloons:
     pop cx
     pop si
 
-    ; Draw balloon
     push si
     push cx
     call drawBalloon
@@ -206,10 +150,6 @@ renderBalloons:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; checkBalloonHit
-; ------------------------------------------------------------
 checkBalloonHit:
     push bx
     push cx
@@ -235,16 +175,14 @@ checkBalloonHit:
     jmp .done
 
 .hit_found:
-    ; Restore background before removing
     push ax
-    call restoreBalloonBackground   ; SI points to balloon
+    call restoreBalloonBackground
+    call playPopSound
     pop ax
 
-    ; Deactivate balloon
     mov byte [si+6], 0
     dec byte [balloon_count]
 
-    ; Increment score
     add word [current_score], 10
 
     mov al, 1
@@ -255,15 +193,6 @@ checkBalloonHit:
     pop bx
     ret
 
-
-; ============================================================================
-; BACKGROUND BUFFER FUNCTIONS
-; ============================================================================
-
-; ------------------------------------------------------------
-; saveAllBackgrounds
-; Saves background for all active balloons
-; ------------------------------------------------------------
 saveAllBackgrounds:
     push ax
     push cx
@@ -273,11 +202,11 @@ saveAllBackgrounds:
     mov cx, MAX_BALLOONS
 
 .save_loop:
-    mov al, [si+6]              ; Check active
+    mov al, [si+6]
     cmp al, 1
     jne .next_save
 
-    call saveBalloonBackground  ; SI points to balloon
+    call saveBalloonBackground
 
 .next_save:
     add si, 16
@@ -288,11 +217,6 @@ saveAllBackgrounds:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; restoreAllBackgrounds
-; Restores background for all active balloons
-; ------------------------------------------------------------
 restoreAllBackgrounds:
     push ax
     push cx
@@ -317,12 +241,6 @@ restoreAllBackgrounds:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; saveBalloonBackground
-; INPUT: SI = pointer to balloon structure
-; Saves 16x14 pixel area to buffer
-; ------------------------------------------------------------
 saveBalloonBackground:
     push ax
     push bx
@@ -333,25 +251,21 @@ saveBalloonBackground:
     push es
     push ds
 
-    ; Get balloon position
-    mov ax, [si+0]              ; X
-    mov bx, [si+2]              ; Y
-    mov di, [si+8]              ; Buffer offset
+    mov ax, [si+0]
+    mov bx, [si+2]
+    mov di, [si+8]
 
-    ; Check bounds
     cmp bx, 0
     jl .done_save
     cmp bx, 200
     jge .done_save
 
-    ; Setup segments
     mov dx, 0xA000
-    mov ds, dx                  ; DS = VGA segment
+    mov ds, dx
     push cs
-    pop es                      ; ES = our data segment
-    add di, background_buffer   ; DI = buffer address
+    pop es
+    add di, background_buffer
 
-    ; Save 14 rows
     mov cx, BALLOON_HEIGHT
 
 .save_row:
@@ -359,22 +273,19 @@ saveBalloonBackground:
     push ax
     push bx
 
-    ; Check if row is visible
     cmp bx, 0
     jl .skip_row
     cmp bx, 200
     jge .skip_row
 
-    ; Calculate VGA offset: Y * 320 + X
     push ax
     mov ax, bx
     mov dx, 320
     mul dx
     pop dx
-    add ax, dx                  ; AX = VGA offset
+    add ax, dx
     mov si, ax
 
-    ; Copy 16 pixels
     mov cx, BALLOON_WIDTH
 .copy_pixel:
     mov al, [ds:si]
@@ -385,7 +296,6 @@ saveBalloonBackground:
     jmp .next_row
 
 .skip_row:
-    ; Fill with zeros if off-screen
     mov cx, BALLOON_WIDTH
     xor al, al
 .fill_zero:
@@ -396,7 +306,7 @@ saveBalloonBackground:
 .next_row:
     pop bx
     pop ax
-    inc bx                      ; Next Y
+    inc bx
     pop cx
     loop .save_row
 
@@ -411,12 +321,6 @@ saveBalloonBackground:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; restoreBalloonBackground
-; INPUT: SI = pointer to balloon structure
-; Restores 16x14 pixel area from buffer
-; ------------------------------------------------------------
 restoreBalloonBackground:
     push ax
     push bx
@@ -427,25 +331,21 @@ restoreBalloonBackground:
     push es
     push ds
 
-    ; Get balloon position
-    mov ax, [si+0]              ; X
-    mov bx, [si+2]              ; Y
-    mov si, [si+8]              ; Buffer offset
+    mov ax, [si+0]
+    mov bx, [si+2]
+    mov si, [si+8]
 
-    ; Check bounds
     cmp bx, 0
     jl .done_restore
     cmp bx, 200
     jge .done_restore
 
-    ; Setup segments
     push cs
-    pop ds                      ; DS = our data segment
-    add si, background_buffer   ; SI = buffer address
+    pop ds
+    add si, background_buffer
     mov dx, 0xA000
-    mov es, dx                  ; ES = VGA segment
+    mov es, dx
 
-    ; Restore 14 rows
     mov cx, BALLOON_HEIGHT
 
 .restore_row:
@@ -453,13 +353,11 @@ restoreBalloonBackground:
     push ax
     push bx
 
-    ; Check if row is visible
     cmp bx, 0
     jl .skip_restore_row
     cmp bx, 200
     jge .skip_restore_row
 
-    ; Calculate VGA offset
     push ax
     mov ax, bx
     mov dx, 320
@@ -468,7 +366,6 @@ restoreBalloonBackground:
     add ax, dx
     mov di, ax
 
-    ; Copy 16 pixels
     mov cx, BALLOON_WIDTH
 .restore_pixel:
     mov al, [ds:si]
@@ -479,7 +376,7 @@ restoreBalloonBackground:
     jmp .next_restore_row
 
 .skip_restore_row:
-    add si, BALLOON_WIDTH       ; Skip buffer row
+    add si, BALLOON_WIDTH
 
 .next_restore_row:
     pop bx
@@ -499,14 +396,6 @@ restoreBalloonBackground:
     pop ax
     ret
 
-
-; ============================================================================
-; HELPER FUNCTIONS
-; ============================================================================
-
-; ------------------------------------------------------------
-; spawnBalloon
-; ------------------------------------------------------------
 spawnBalloon:
     push ax
     push bx
@@ -529,7 +418,6 @@ spawnBalloon:
     jmp .no_spawn
 
 .found_slot:
-    ; Random X
     call getRandomNumber
     mov bx, 256
     xor dx, dx
@@ -537,10 +425,8 @@ spawnBalloon:
     add dx, MIN_SPAWN_X
     mov [si+0], dx
 
-    ; Y at bottom
     mov word [si+2], SPAWN_Y
 
-    ; Random letter
     call getRandomNumber
     mov bx, 26
     xor dx, dx
@@ -548,12 +434,10 @@ spawnBalloon:
     add dl, 'A'
     mov [si+4], dl
 
-    ; Random color
     call getRandomNumber
     and al, 0x07
     mov [si+5], al
 
-    ; Activate
     mov byte [si+6], 1
     mov byte [si+7], BALLOON_SPEED
 
@@ -566,10 +450,6 @@ spawnBalloon:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; moveBalloons
-; ------------------------------------------------------------
 moveBalloons:
     push ax
     push cx
@@ -583,7 +463,6 @@ moveBalloons:
     cmp al, 1
     jne .next_move
 
-    ; Move UP: Y -= speed
     mov al, [si+7]
     xor ah, ah
     sub [si+2], ax
@@ -597,10 +476,6 @@ moveBalloons:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; removeOffscreenBalloons
-; ------------------------------------------------------------
 removeOffscreenBalloons:
     push ax
     push bx
@@ -619,11 +494,16 @@ removeOffscreenBalloons:
     cmp ax, DESPAWN_Y
     jge .next_remove
 
-    ; Restore background before deactivating
     call restoreBalloonBackground
 
     mov byte [si+6], 0
     dec byte [balloon_count]
+    
+    push si
+    push cx
+    call playErrorSound
+    pop cx
+    pop si
 
 .next_remove:
     add si, 16
@@ -635,10 +515,6 @@ removeOffscreenBalloons:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; getRandomNumber
-; ------------------------------------------------------------
 getRandomNumber:
     push bx
     push dx

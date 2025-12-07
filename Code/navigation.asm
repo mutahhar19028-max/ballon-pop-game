@@ -1,47 +1,9 @@
-; ============================================================
-; navigation.asm — Menu Navigation System with Arrow Keys
-; ============================================================
-; ------------------------------------------------------------
-; drawMenuArrow
-; Draws '>' arrow at current selection position
-; ------------------------------------------------------------
 drawMenuArrow:
     push ax
     push bx
     push cx
     push dx
 
-    ; Calculate Y position based on selection
-    xor ax, ax
-    mov al, [current_selection]
-    mov bx, MENU_BUTTON_HEIGHT
-    add bx, MENU_BUTTON_HEIGHT / 2  ; Spacing between buttons
-    mul bx
-    add ax, ARROW_FIRST_Y
-    mov dx, ax
-
-    ; Draw arrow
-    mov cx, ARROW_X_OFFSET
-    mov bl, [dark_brown]     ; Arrow color
-    call drawSelectionArrow
-
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret
-
-; ------------------------------------------------------------
-; clearMenuArrow
-; Erases arrow at current selection (draws space in bg color)
-; ------------------------------------------------------------
-clearMenuArrow:
-    push ax
-    push bx
-    push cx
-    push dx
-
-    ; Calculate Y position
     xor ax, ax
     mov al, [current_selection]
     mov bx, MENU_BUTTON_HEIGHT
@@ -50,16 +12,40 @@ clearMenuArrow:
     add ax, ARROW_FIRST_Y
     mov dx, ax
 
-    ; Draw space (or redraw background color)
     mov cx, ARROW_X_OFFSET
-    mov bl, [char_color]     ; Background color
-    call drawSelectionArrow  ; Draws space in bg color
+    mov bl, [dark_brown]
+    call drawSelectionArrow
 
     pop dx
     pop cx
     pop bx
     pop ax
     ret
+
+clearMenuArrow:
+    push ax
+    push bx
+    push cx
+    push dx
+
+    xor ax, ax
+    mov al, [current_selection]
+    mov bx, MENU_BUTTON_HEIGHT
+    add bx, MENU_BUTTON_HEIGHT / 2
+    mul bx
+    add ax, ARROW_FIRST_Y
+    mov dx, ax
+
+    mov cx, ARROW_X_OFFSET
+    mov bl, [char_color]
+    call drawSelectionArrow
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+
 handleMainMenuInput:
     push bx
     push cx
@@ -71,7 +57,7 @@ handleMainMenuInput:
     call drawMenuArrow
 
     mov ah, 0x00
-    int 0x16            ; wait key
+    int 0x16
 
     cmp ah, KEY_UP
     je .move_up
@@ -122,12 +108,7 @@ handleMainMenuInput:
     pop bx
     ret
 
-
-; ------------------------------------------------------------
-; executeMenuChoice — ONLY CHANGES STATE
-; ------------------------------------------------------------
 executeMenuChoice:
-
     cmp al, MENU_OPTION_PLAY
     je .start
 
@@ -154,14 +135,7 @@ executeMenuChoice:
     call showBackground320x200
     ret
 
-
-; ------------------------------------------------------------
-; showHelpScreen — Show instructions, wait for key
-; DOES NOT DRAW BG, DOES NOT RETURN TO MENU - ONLY CHANGES STATE
-; ------------------------------------------------------------
 showHelpScreen:
-
-    ; Draw help text normally
     call clearScreen
     
     mov cx, 40 
@@ -196,13 +170,12 @@ showHelpScreen:
     call drawText
 
     mov ah, 0x00
-    int 0x16        ; Wait for key
+    int 0x16
 
-    mov byte [game_state], STATE_MENU ; only change state
+    mov byte [game_state], STATE_MENU
     call showBackground320x200
     ret
 
-; Help screen text
 help_title:     db "HOW TO PLAY", 0
 help_line1:     db "Type letters on balloons", 0
 help_line2:     db "Pop balloons for points", 0

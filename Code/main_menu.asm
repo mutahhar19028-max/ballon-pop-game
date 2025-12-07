@@ -1,8 +1,3 @@
-; ======================================================================
-; drawMainMenu
-; Draws the main menu with title, Play button, and Exit button.
-; ======================================================================
-
 drawMainMenu:
     push ax
     push bx
@@ -11,28 +6,23 @@ drawMainMenu:
     push si
     push di
 
-    ; ------------------------------------------------------------
-    ; TITLE
-    ; ------------------------------------------------------------
+    mov word[DIT], 0
+
     mov  cx, 50
     mov  dx, 30
-    mov  si, title_text              ; DS:SI -> title string
-    mov  bl, [nature_dark_green]     ; color
-    mov  bh, 2                       ; scale
+    mov  si, title_text
+    mov  bl, [nature_dark_green]
+    mov  bh, 2
     call drawText
 
-    ; ------------------------------------------------------------
-    ; PLAY BUTTON
-    ; ------------------------------------------------------------
     mov  ax, MENU_BUTTON_X - 7
     mov  bx, MENU_BUTTON_Y - 2
     mov  cx, MENU_BUTTON_WIDTH + 15
     mov  dx, MENU_BUTTON_HEIGHT + 4
-    mov  si, [dark_orange]                 ; outer color
-    mov  di, [dark_brown]     ; fill color
+    mov  si, [dark_orange]
+    mov  di, [dark_brown]
     call drawRoundedRect
 
-    ; --- PLAY TEXT ---
     mov  ax, MENU_BUTTON_X
     add  ax, MENU_BUTTON_WIDTH / 8
     mov  cx, ax
@@ -48,9 +38,6 @@ drawMainMenu:
 
     call updatePadding
 
-    ; ------------------------------------------------------------
-    ; HELP BUTTON
-    ; ------------------------------------------------------------
     mov  ax, MENU_BUTTON_X - 7
     mov  bx, MENU_BUTTON_Y - 2
     add  bx, [DIT]
@@ -60,7 +47,6 @@ drawMainMenu:
     mov  di, [dark_brown]
     call drawRoundedRect
 
-    ; --- HELP TEXT ---
     mov  ax, MENU_BUTTON_X
     add  ax, MENU_BUTTON_WIDTH / 8
     mov  cx, ax
@@ -77,9 +63,6 @@ drawMainMenu:
 
     call updatePadding
 
-    ; ------------------------------------------------------------
-    ; EXIT BUTTON
-    ; ------------------------------------------------------------
     mov  ax, MENU_BUTTON_X - 7
     mov  bx, MENU_BUTTON_Y - 2
     add  bx, [DIT]
@@ -89,7 +72,6 @@ drawMainMenu:
     mov  di, [dark_brown]
     call drawRoundedRect
 
-    ; --- EXIT TEXT ---
     mov  ax, MENU_BUTTON_X
     add  ax, MENU_BUTTON_WIDTH / 8
     mov  cx, ax
@@ -104,9 +86,6 @@ drawMainMenu:
     mov  bh, 2
     call drawText
 
-    ; ------------------------------------------------------------
-    ; CLEANUP
-    ; ------------------------------------------------------------
     pop  di
     pop  si
     pop  dx
@@ -115,9 +94,6 @@ drawMainMenu:
     pop  ax
     ret
 
-; ------------------------------------------------------------
-; UPDATE PADDING
-; ------------------------------------------------------------
 updatePadding:
     mov  ax, [DIT]
     add  ax, MENU_BUTTON_HEIGHT

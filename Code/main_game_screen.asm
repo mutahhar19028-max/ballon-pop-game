@@ -1,6 +1,3 @@
-; ------------------------------------------------------------
-; PUBLIC: drawGameUI
-; ------------------------------------------------------------
 showMainGameScreen:
     push ax
     push bx
@@ -12,8 +9,6 @@ showMainGameScreen:
 
     call drawScorePanel
     call drawTimerPanel
-    ;call drawSoundButton
-    ;call drawPauseButton
 
     pop es
     pop di
@@ -24,9 +19,6 @@ showMainGameScreen:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawScorePanel
-; ------------------------------------------------------------
 drawScorePanel:
     push ax
     push bx
@@ -60,11 +52,6 @@ drawScorePanel:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; PUBLIC: drawScoreValue
-; Draws the current score at defined position
-; Called by drawScorePanel
-; ------------------------------------------------------------
 drawScoreValue:
     push ax
     push bx
@@ -74,44 +61,37 @@ drawScoreValue:
     push di
     push bp
 
-    ; Allocate 5 bytes for "0000\0"
     sub sp, 5
-    mov bp, sp          ; BP points to buffer
+    mov bp, sp
 
-    mov ax, [current_score]  ; AX = current score
+    mov ax, [current_score]
 
-    ; --- Thousands digit ---
     mov cx, 1000
     xor dx, dx
-    div cx                  ; AX / 1000 -> AX = quotient in AL, DX = remainder
+    div cx
     add al, '0'
-    mov [bp], al            ; store thousands digit
+    mov [bp], al
 
-    ; --- Hundreds digit ---
-    mov ax, dx               ; remainder from thousands division
+    mov ax, dx
     mov cx, 100
     xor dx, dx
-    div cx                   ; AX / 100 -> AL = hundreds, DX = remainder
+    div cx
     add al, '0'
     mov [bp+1], al
 
-    ; --- Tens digit ---
-    mov ax, dx               ; remainder from hundreds
+    mov ax, dx
     mov cx, 10
     xor dx, dx
-    div cx                   ; AX / 10 -> AL = tens, DX = ones
+    div cx
     add al, '0'
     mov [bp+2], al
 
-    ; --- Ones digit ---
-    mov al, dl               ; remainder from tens division
+    mov al, dl
     add al, '0'
     mov [bp+3], al
 
-    ; --- Null terminator ---
     mov byte [bp+4], 0
 
-    ; Draw score string
     mov cx, SCORE_VALUE_X - 14
     mov dx, SCORE_VALUE_Y - 2
     mov si, bp
@@ -129,10 +109,6 @@ drawScoreValue:
     pop ax
     ret
 
-;; ------------------------------------------------------------
-; drawTimerPanel
-; Draws timer panel with dynamic time display
-; ------------------------------------------------------------
 drawTimerPanel:
     push ax
     push bx
@@ -141,7 +117,6 @@ drawTimerPanel:
     push si
     push di
 
-    ; Draw panel background
     mov ax, TIMER_PANEL_X
     mov bx, TIMER_PANEL_Y
     mov cx, TIMER_PANEL_WIDTH
@@ -150,7 +125,6 @@ drawTimerPanel:
     mov di, TIMER_BORDER_COLOR
     call drawRoundedRect
 
-    ; Draw "TIME:" label
     mov cx, TIMER_TEXT_X
     mov dx, TIMER_TEXT_Y
     mov si, timer_label_text
@@ -158,7 +132,6 @@ drawTimerPanel:
     mov bh, 1
     call drawText
 
-    ; Draw dynamic timer value (MM:SS)
     call drawTimerValue
 
     pop di
@@ -169,16 +142,8 @@ drawTimerPanel:
     pop ax
     ret
 
-; Timer label text (just "TIME:")
 timer_label_text    db "TIME: ", 0
 
-; ------------------------------------------------------------
-; drawTimerValue
-; Draws the current timer value in MM:SS format
-; Called every frame by drawTimerPanel
-; Reads current values from timer_minutes and timer_display_sec
-; These variables are updated by the timer ISR (once per second)
-; ------------------------------------------------------------
 drawTimerValue:
     push ax
     push bx
@@ -188,52 +153,42 @@ drawTimerValue:
     push di
     push bp
 
-    ; Allocate 6 bytes on stack for timer string "MM:SS\0"
     sub sp, 6
-    mov bp, sp              ; BP points to buffer
+    mov bp, sp
 
-    ; Build "MM:SS" string from current timer values
-    ; --- Minutes tens digit ---
     xor ah, ah
     mov al, [timer_minutes]
     mov bl, 10
-    div bl                  ; AL = tens, AH = ones
-    add al, '0'             ; Convert to ASCII
-    mov [bp], al            ; Store tens digit
+    div bl
+    add al, '0'
+    mov [bp], al
     
-    ; --- Minutes ones digit ---
-    mov al, ah              ; Get ones from AH
+    mov al, ah
     add al, '0'
     mov [bp+1], al
 
-    ; --- Colon separator ---
     mov byte [bp+2], ':'
 
-    ; --- Seconds tens digit ---
     xor ah, ah
     mov al, [timer_display_sec]
     mov bl, 10
-    div bl                  ; AL = tens, AH = ones
+    div bl
     add al, '0'
     mov [bp+3], al
 
-    ; --- Seconds ones digit ---
     mov al, ah
     add al, '0'
     mov [bp+4], al
 
-    ; --- Null terminator ---
     mov byte [bp+5], 0
 
-    ; Draw the timer string at defined position
     mov cx, TIMER_VALUE_X
     mov dx, TIMER_VALUE_Y
-    mov si, bp              ; SI points to our string buffer
-    mov bl, [dark_brown]    ; Text color
-    mov bh, 1              ; Scale (2 = medium size)
+    mov si, bp
+    mov bl, [dark_brown]
+    mov bh, 1
     call drawText
 
-    ; Clean up stack
     add sp, 6
 
     pop bp
@@ -245,9 +200,6 @@ drawTimerValue:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawSoundButton
-; ------------------------------------------------------------
 drawSoundButton:
     push ax
     push bx
@@ -271,9 +223,6 @@ drawSoundButton:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawPauseButton
-; ------------------------------------------------------------
 drawPauseButton:
     push ax
     push bx
@@ -297,9 +246,6 @@ drawPauseButton:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawSpeakerIcon
-; ------------------------------------------------------------
 drawSpeakerIcon:
     push ax
     push bx
@@ -328,9 +274,6 @@ drawSpeakerIcon:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawPauseIcon
-; ------------------------------------------------------------
 drawPauseIcon:
     push ax
     push bx
@@ -357,7 +300,3 @@ drawPauseIcon:
     pop bx
     pop ax
     ret
-
-; ============================================================
-; END OF main_game_screen.asm
-; ============================================================

@@ -2,24 +2,7 @@
 %define SCREEN_HEIGHT   200
 %define VGA_SEGMENT     0xA000
 
-; ------------------------------------------------------------
-; drawRoundedRect
-; ------------------------------------------------------------
-; INPUT:
-;   AX = X coordinate (top-left)
-;   BX = Y coordinate (top-left)
-;   CX = Width in pixels
-;   DX = Height in pixels
-;   SI = Fill color
-;   DI = Border color
-; OUTPUT:
-;   Rounded rectangle with 2-pixel corner radius
-; EFFECT:
-;   Draws main body as filled rect (offset by 2 pixels)
-;   Draws top/bottom strips for rounded edges
-;   Draws border outline using drawRectOutline
-;   Creates visual effect of rounded corners by omitting corner pixels
-; ------------------------------------------------------------
+; Inputs: AX=x, BX=y, CX=width, DX=height, SI=fill_color, DI=border_color
 drawRoundedRect:
     push ax
     push bx
@@ -83,22 +66,7 @@ drawRoundedRect:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawFilledRect
-; ------------------------------------------------------------
-; INPUT:
-;   AX = X coordinate (top-left)
-;   BX = Y coordinate (top-left)
-;   CX = Width in pixels
-;   DX = Height in pixels
-;   SI = Color value
-; OUTPUT:
-;   Solid filled rectangle
-; EFFECT:
-;   Draws DX rows, each CX pixels wide
-;   Calculates offset for each row: (Y*320 + X)
-;   Fills each row left to right with specified color
-; ------------------------------------------------------------
+; Inputs: AX=x, BX=y, CX=width, DX=height, SI=color
 drawFilledRect:
     push ax
     push bx
@@ -154,24 +122,7 @@ drawFilledRect:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawRectOutline
-; ------------------------------------------------------------
-; INPUT:
-;   AX = X coordinate (top-left)
-;   BX = Y coordinate (top-left)
-;   CX = Width in pixels
-;   DX = Height in pixels
-;   SI = Color value for border
-; OUTPUT:
-;   Hollow rectangle (4 border lines only)
-; EFFECT:
-;   Draws top horizontal line at (X, Y)
-;   Draws bottom horizontal line at (X, Y+Height-1)
-;   Draws left vertical line at (X, Y)
-;   Draws right vertical line at (X+Width-1, Y)
-;   Interior remains unchanged
-; ------------------------------------------------------------
+; Inputs: AX=x, BX=y, CX=width, DX=height, SI=color
 drawRectOutline:
     push ax
     push bx
@@ -220,22 +171,7 @@ drawRectOutline:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; drawHorizontalLine
-; ------------------------------------------------------------
-; INPUT:
-;   AX = Starting X coordinate
-;   BX = Y coordinate
-;   CX = Length in pixels
-;   SI = Color value
-; OUTPUT:
-;   Horizontal line drawn from (X,Y) extending CX pixels right
-; EFFECT:
-;   Calculates starting offset (Y*320 + X)
-;   Writes color value CX times sequentially
-;   Performs basic bounds checking
-; ------------------------------------------------------------
+; Inputs: AX=start_x, BX=y, CX=length, SI=color
 drawHorizontalLine:
     push ax
     push bx
@@ -277,21 +213,7 @@ drawHorizontalLine:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawVerticalLine
-; ------------------------------------------------------------
-; INPUT:
-;   AX = X coordinate
-;   BX = Starting Y coordinate
-;   DX = Length in pixels (height)
-;   SI = Color value
-; OUTPUT:
-;   Vertical line drawn from (X,Y) extending DX pixels down
-; EFFECT:
-;   Recalculates offset for each row (Y*320 + X)
-;   Writes one pixel per row, incrementing Y
-;   Loops DX times downward
-; ------------------------------------------------------------
+; Inputs: AX=x, BX=start_y, DX=length, SI=color
 drawVerticalLine:
     push ax
     push bx
@@ -332,17 +254,7 @@ drawVerticalLine:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; clearScreen
-; ------------------------------------------------------------
-; INPUT:
-;   [char_color] = Color value to fill screen (0-255)
-; OUTPUT:
-;   Entire screen filled with specified color
-; EFFECT:
-;   Uses REP STOSB to efficiently write 64000 bytes
-;   Sets all VGA memory (0xA000:0000) to same color
-; ------------------------------------------------------------
+; Inputs: [char_color]=color_byte
 clearScreen:
     push ax
     push cx
@@ -352,7 +264,7 @@ clearScreen:
     mov ax, VGA_SEGMENT
     mov es, ax
     xor di, di
-    mov cx, SCREEN_WIDTH * SCREEN_HEIGHT   ; 64000
+    mov cx, SCREEN_WIDTH * SCREEN_HEIGHT
     xor ah, ah
     mov al, [char_color]
     rep stosb
@@ -363,49 +275,37 @@ clearScreen:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; display_palette_wide
-; ------------------------------------------------------------
-; EFFECT:
-;   Prints 256 colors as wide strips (160 pixels each)
-; ------------------------------------------------------------
+; Inputs: None (Uses hardcoded 320x200 loop)
 display_palette_wide:
     push ax
-    push bx             ; Preserve BX for inner loop counter
+    push bx
     push cx
     push di
     push es
     
-    ; 1. Setup ES:DI to point to the start of VGA memory (A000:0000)
-    mov ax, 0A000h      ; VGA_SEGMENT
+    mov ax, 0A000h
     mov es, ax
-    xor di, di          ; DI = 0 (start of video memory)
+    xor di, di
 
-    ; 2. Setup Outer Loop (256 Colors)
-    mov cx, 256          ; CX = Outer loop counter (256 colors)
-    mov al, 0         ; AL = Color Index (starts at 0)
+    mov cx, 256
+    mov al, 0
 
 outer_color_loop:
-    ; 3. Setup Inner Loop (160 Pixels)
-    mov bx, 320*200         ; BX = Inner loop counter (160 pixels wide)
+    mov bx, 320*200
 
 inner_pixel_loop:
-    stosb               ; Write AL (current color) to [ES:DI], then DI = DI + 1
-    dec bx              ; BX = BX - 1
-    jnz inner_pixel_loop; Continue inner loop until 160 pixels are written
+    stosb
+    dec bx
+    jnz inner_pixel_loop
 
     push ax
     mov ax, 0
     int 16h
     pop ax
 
-    ; 4. Increment Color Index
-    inc al              ; AL = AL + 1 (move to the next color)
+    inc al
+    loop outer_color_loop
 
-    ; 5. Continue Outer Loop
-    loop outer_color_loop ; Decrement CX, jump to outer_color_loop if CX != 0
-
-    ; Restore registers
     pop es
     pop di
     pop cx
@@ -413,10 +313,7 @@ inner_pixel_loop:
     pop ax
     ret
 
-
-; ======================================================================
-; drawText  (CX=x, DX=y, SI=ptr, BL=color, BH=scale)
-; ======================================================================
+; Inputs: CX=x, DX=y, SI=string_ptr, BL=color, BH=scale
 drawText:
     push ax
     push bx
@@ -443,7 +340,6 @@ drawText:
     pop si
 
 .space:
-    ; Move cursor: advance by (9 * scale) pixels (9 width for 9x16)
     mov al, [dt_scale]
     xor ah, ah
     mov cl, 9
@@ -463,11 +359,7 @@ drawText:
     pop ax
     ret
 
-; ======================================================================
-; drawChar — draws scaled character using BIOS 8x8 font
-; Input: AL = ASCII character
-; Uses [dt_x_pos], [dt_y_pos], [dt_color], [dt_scale]
-; ======================================================================
+; Inputs: AL=ascii_char, Uses:[dt_x_pos], [dt_y_pos], [dt_color], [dt_scale]
 drawChar:
     push ax
     push bx
@@ -477,31 +369,29 @@ drawChar:
     push di
     push bp
 
-    ; --- Compute glyph offset: 8 bytes per character ---
     mov ah, 0
     mov bl, 8
-    mul bl                  ; AX = ASCII * 8 (each glyph = 8 bytes)
+    mul bl
     mov si, FONT_OFF
     add si, ax
     mov ax, FONT_SEG
-    mov es, ax              ; ES:SI -> glyph start
+    mov es, ax
 
-    ; --- Save start X/Y ---
     mov ax, [dt_x_pos]
     mov [.start_x], ax
     mov ax, [dt_y_pos]
     mov [.start_y], ax
 
-    mov bp, 8               ; 8 rows per glyph
+    mov bp, 8
 
 .row_loop:
-    mov al, [es:si]         ; read next row (8 bits)
+    mov al, [es:si]
     inc si
 
-    mov cx, [.start_x]      ; reset X
-    mov dx, [dt_y_pos]      ; current Y
+    mov cx, [.start_x]
+    mov dx, [dt_y_pos]
 
-    mov di, 8               ; 8 bits per row
+    mov di, 8
 
 .bit_loop:
     mov dx, [dt_y_pos]
@@ -545,7 +435,6 @@ drawChar:
     dec di
     jnz .bit_loop
 
-    ; Advance Y
     mov ax, [dt_y_pos]
     mov bx, [dt_scale]
     add ax, bx
@@ -554,7 +443,6 @@ drawChar:
     dec bp
     jnz .row_loop
 
-    ; Restore Y
     mov ax, [.start_y]
     mov [dt_y_pos], ax
 
@@ -572,10 +460,7 @@ drawChar:
 .scale_x_count  dw 0
 .scale_y_count  dw 0
 
-; ======================================================================
-; putPixel (VGA 320x200)
-; CX=x, DX=y, color in [dt_color]
-; ======================================================================
+; Inputs: CX=x, DX=y, [dt_color]=color
 putPixel:
     push ax
     push bx
@@ -584,13 +469,11 @@ putPixel:
     push di
     push es
 
-    ; bounds check (safe for 320x200)
     cmp cx, 320
     jae .done_put
     cmp dx, 200
     jae .done_put
 
-    ; offset = y*320 + x
     mov ax, dx
     mov bx, 320
     mul bx
@@ -611,9 +494,7 @@ putPixel:
     pop ax
     ret
 
-; ======================================================================
-; drawSelectionArrow
-; ======================================================================
+; Inputs: CX=x, DX=y, BL=color
 drawSelectionArrow:
     push ax
     push bx
@@ -633,18 +514,15 @@ drawSelectionArrow:
     pop ax
     ret
 
-
-    
+; Inputs: None (Waits for port 0x3DA)
 wait_vsync:
     mov dx, 03DAh
 
-; wait until retrace is ACTIVE
 .l1:
     in al, dx
     test al, 08h
     jz .l1
 
-; wait until retrace is INACTIVE
 .l2:
     in al, dx
     test al, 08h
@@ -652,10 +530,7 @@ wait_vsync:
 
     ret
 
-
-; ------------------------------------------------------------
-; drawCircleOutline - FIXED VERSION (8088 Compatible)
-; ------------------------------------------------------------
+; Inputs: AX=center_x, BX=center_y, CX=radius, DL=color
 drawCircleOutline:
     push ax
     push bx
@@ -673,7 +548,6 @@ drawCircleOutline:
     mov word [bp-6], cx
     mov byte [bp-8], dl
 
-    ; **FIX: Set dt_color once at the start**
     mov [dt_color], dl
 
     mov word [bp-10], 0
@@ -688,56 +562,48 @@ drawCircleOutline:
     mov ax, [bp-10]
     mov bx, [bp-12]
 
-    ; 1: (cx + x, cy + y)
     mov cx, [bp-2]
     add cx, [bp-10]
     mov dx, [bp-4]
     add dx, [bp-12]
     call putPixel
 
-    ; 2: (cx - x, cy + y)
     mov cx, [bp-2]
     sub cx, [bp-10]
     mov dx, [bp-4]
     add dx, [bp-12]
     call putPixel
 
-    ; 3: (cx + x, cy - y)
     mov cx, [bp-2]
     add cx, [bp-10]
     mov dx, [bp-4]
     sub dx, [bp-12]
     call putPixel
 
-    ; 4: (cx - x, cy - y)
     mov cx, [bp-2]
     sub cx, [bp-10]
     mov dx, [bp-4]
     sub dx, [bp-12]
     call putPixel
 
-    ; 5: (cx + y, cy + x)
     mov cx, [bp-2]
     add cx, [bp-12]
     mov dx, [bp-4]
     add dx, [bp-10]
     call putPixel
 
-    ; 6: (cx - y, cy + x)
     mov cx, [bp-2]
     sub cx, [bp-12]
     mov dx, [bp-4]
     add dx, [bp-10]
     call putPixel
 
-    ; 7: (cx + y, cy - x)
     mov cx, [bp-2]
     add cx, [bp-12]
     mov dx, [bp-4]
     sub dx, [bp-10]
     call putPixel
 
-    ; 8: (cx - y, cy - x)
     mov cx, [bp-2]
     sub cx, [bp-12]
     mov dx, [bp-4]
@@ -784,9 +650,7 @@ drawCircleOutline:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawCircleFilled - FIXED VERSION (8088 Compatible)
-; ------------------------------------------------------------
+; Inputs: AX=center_x, BX=center_y, CX=radius, DL=color
 drawCircleFilled:
     push ax
     push bx
@@ -813,27 +677,23 @@ drawCircleFilled:
     mov word [bp-14], ax
 
 .fill_loop:
-    ; Length1 = 2*x + 1
     mov ax, [bp-10]
     shl ax, 1
     add ax, 1
     mov cx, ax
 
-    ; StartX = center_x - x
     mov ax, [bp-2]
     sub ax, [bp-10]
     mov dx, ax
 
-    ; Y = center_y - y
     mov bx, [bp-4]
     sub bx, [bp-12]
     mov ax, dx
     xor si, si
-    mov si, word [bp-8]  ; Load color (byte stored in word position)
-    and si, 0x00FF       ; Mask to get only low byte
+    mov si, word [bp-8]
+    and si, 0x00FF
     call drawHorizontalLine
 
-    ; Y = center_y + y
     mov bx, [bp-4]
     add bx, [bp-12]
     mov ax, dx
@@ -842,18 +702,15 @@ drawCircleFilled:
     and si, 0x00FF
     call drawHorizontalLine
 
-    ; Length2 = 2*y + 1
     mov ax, [bp-12]
     shl ax, 1
     add ax, 1
     mov cx, ax
 
-    ; StartX2 = center_x - y
     mov ax, [bp-2]
     sub ax, [bp-12]
     mov dx, ax
 
-    ; Y = center_y - x
     mov bx, [bp-4]
     sub bx, [bp-10]
     mov ax, dx
@@ -862,7 +719,6 @@ drawCircleFilled:
     and si, 0x00FF
     call drawHorizontalLine
 
-    ; Y = center_y + x
     mov bx, [bp-4]
     add bx, [bp-10]
     mov ax, dx
@@ -911,12 +767,7 @@ drawCircleFilled:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; clearScreen320x200
-; Clears entire 320x200 VGA screen to specified color
-; INPUT: AL = Color value (0-255)
-; Uses BIOS interrupt for compatibility
-; ------------------------------------------------------------
+; Inputs: AL=color_byte
 clearScreen320x200:
     push ax
     push bx
@@ -925,12 +776,11 @@ clearScreen320x200:
     push di
     push es
 
-    ; Method 1: Direct VGA memory write (faster)
     mov bx, VGA_SEGMENT
     mov es, bx
     xor di, di
-    mov cx, SCREEN_WIDTH * SCREEN_HEIGHT   ; 64000
-    mov ah, al              ; Duplicate color in AH
+    mov cx, SCREEN_WIDTH * SCREEN_HEIGHT
+    mov ah, al
     rep stosb
 
     pop es
@@ -941,23 +791,18 @@ clearScreen320x200:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; clearScreenBIOS
-; Alternative: Uses BIOS scroll to clear screen (slower but safer)
-; INPUT: AL = Color value
-; ------------------------------------------------------------
+; Inputs: AL=color_byte
 clearScreenBIOS:
     push ax
     push bx
     push cx
     push dx
 
-    ; BIOS: Scroll window (clear screen)
-    mov ah, 0x06        ; Scroll up function
-    mov al, 0           ; Clear entire window
-    mov bh, 0           ; Attribute (ignored in mode 13h)
-    mov cx, 0           ; Upper left (0,0)
-    mov dx, 0xC813      ; Lower right (200, 320 in rows/cols)
+    mov ah, 0x06
+    mov al, 0
+    mov bh, 0
+    mov cx, 0
+    mov dx, 0xC813
     int 0x10
 
     pop dx
@@ -966,10 +811,7 @@ clearScreenBIOS:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; setVideoMode13h
-; Sets VGA mode 320x200x256 using BIOS interrupt
-; ------------------------------------------------------------
+; Inputs: None (Sets Mode 13h)
 setVideoMode13h:
     push ax
     mov ax, 0x0013
@@ -977,10 +819,7 @@ setVideoMode13h:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; setTextMode
-; Returns to text mode 80x25
-; ------------------------------------------------------------
+; Inputs: None (Sets Mode 03h)
 setTextMode:
     push ax
     mov ax, 0x0003
@@ -988,11 +827,12 @@ setTextMode:
     pop ax
     ret
 
+; Inputs: None (Flushes keyboard buffer)
 flushKeyboardBuffer:
-    mov ah, 01h        ; check keystroke available?
+    mov ah, 01h
     int 16h
-    jz .done           ; nothing left
-    mov ah, 00h        ; read & discard
+    jz .done
+    mov ah, 00h
     int 16h
     jmp flushKeyboardBuffer
 .done:

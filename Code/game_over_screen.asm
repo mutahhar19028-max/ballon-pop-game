@@ -1,7 +1,3 @@
-; ------------------------------------------------------------
-; PUBLIC: showPauseScreen
-; Main entry point - displays pause overlay and handles input
-; ------------------------------------------------------------
 showGameOverScreen:
     push ax
     push bx
@@ -11,12 +7,10 @@ showGameOverScreen:
     push di
     push ds
 
-    ; Ensure DS = CS for data access
     push cs
     pop ds
 
 .pause_loop:
-    ; Draw complete pause screen
     call drawGameOverPanel
     call drawGameOverStats
     call drawGameOverTitle
@@ -31,11 +25,6 @@ showGameOverScreen:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; drawGameOverPanel
-; Draws main pause panel with rounded corners
-; USES: drawRoundedRect from ui.asm
-; ------------------------------------------------------------
 drawGameOverPanel:
     push ax
     push bx
@@ -44,7 +33,6 @@ drawGameOverPanel:
     push si
     push di
 
-    ; Main panel body
     mov ax, GAMEOVER_PANEL_X
     mov bx, GAMEOVER_PANEL_Y
     mov cx, GAMEOVER_PANEL_WIDTH
@@ -60,12 +48,6 @@ drawGameOverPanel:
     pop ax
     ret
 
-
-; ------------------------------------------------------------
-; drawGameOverTitle
-; Draws pulsing "GAME OVER" title
-; CALLS: drawTextCentered
-; ------------------------------------------------------------
 drawGameOverTitle:
     push ax
     push bx
@@ -76,8 +58,8 @@ drawGameOverTitle:
 
     mov  cx, 90
     mov  dx, 32
-    mov  si, gameover_title              ; DS:SI -> title string
-    mov  bl, GAMEOVER_TITLE_COLOR     ; color
+    mov  si, gameover_title
+    mov  bl, GAMEOVER_TITLE_COLOR
     mov  bh, 2
     call drawText
 
@@ -89,9 +71,6 @@ drawGameOverTitle:
     pop ax
     ret
 
-; ============================================================
-; END OF pause_screen.asm
-; ============================================================
 drawGameOverStats:
     push ax
     push bx
@@ -108,7 +87,6 @@ drawGameOverStats:
     mov  si, [dark_brown]
     call drawRoundedRect
 
-    ; --- SCORE TEXT ---
     mov  ax, GAMEOVER_MENU_BUTTON_X - 1
     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8 + 2
     mov  cx, ax
@@ -133,7 +111,6 @@ drawGameOverStats:
     mov  si, [dark_brown]
     call drawRoundedRect
 
-    ; --- TIME TEXT ---
     mov  ax, GAMEOVER_MENU_BUTTON_X + 1
     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
     mov  cx, ax
@@ -158,7 +135,6 @@ drawGameOverStats:
     pop ax
     ret
 
-
 drawGameOverMenu:
     push ax
     push bx
@@ -175,7 +151,6 @@ drawGameOverMenu:
     mov  si, [dark_brown]
     call drawRoundedRect
 
-    ; --- RETRY TEXT ---
     mov  ax, GAMEOVER_MENU_BUTTON_X + 3
     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
     mov  cx, ax
@@ -192,9 +167,6 @@ drawGameOverMenu:
 
     call updatePad
 
-    ; ------------------------------------------------------------
-    ; QUIT BUTTON
-    ; ------------------------------------------------------------
     mov  ax, GAMEOVER_MENU_BUTTON_X
     mov  bx, GAMEOVER_MENU_BUTTON_Y
     add  bx, [DIS]
@@ -203,7 +175,6 @@ drawGameOverMenu:
     mov  si, [dark_brown]
     call drawRoundedRect
 
-    ; --- QUIT TEXT ---
     mov  ax, GAMEOVER_MENU_BUTTON_X
     add  ax, GAMEOVER_MENU_BUTTON_WIDTH / 8
     mov  cx, ax
@@ -227,9 +198,6 @@ drawGameOverMenu:
     pop ax
     ret
 
-; ------------------------------------------------------------
-; UPDATE PADDING
-; ------------------------------------------------------------
 updatePad:
     mov  ax, [DIS]
     add  ax, GAMEOVER_MENU_BUTTON_HEIGHT

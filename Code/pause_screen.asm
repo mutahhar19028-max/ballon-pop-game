@@ -1,8 +1,3 @@
-; ============================================================
-; pause_screen.asm — All pause screen logic, drawing & input
-; ============================================================
-; PUBLIC: showPauseScreen
-; Draws pause overlay and handles input
 showPauseScreen:
     push ax
     push bx
@@ -12,19 +7,16 @@ showPauseScreen:
     push di
     push ds
 
-    ; DS = CS for data access
     push cs
     pop ds
 
     mov word [DIST], 0
 
 .pause_input_loop:
-    ; Draw complete pause screen
     call drawPausePanel
     call drawPauseTitle
     call drawPauseMenu
 
-    ; Clear keyboard buffer
 .clear_buffer:
     mov ah, 0x01
     int 0x16
@@ -34,18 +26,16 @@ showPauseScreen:
     jmp .clear_buffer
 .buffer_clear:
 
-    ; Wait for key
     mov ah, 0x00
-    int 0x16              ; AL = ASCII, AH = scan
+    int 0x16
 
-    ; Check ASCII codes
-    cmp al, 27            ; ESC
+    cmp al, 27
     je .action_resume
-    cmp al, 'r'            
+    cmp al, 'r'
     je .action_retry
-    cmp al, 'R'            
+    cmp al, 'R'
     je .action_retry
-    cmp al, 'q'            
+    cmp al, 'q'
     je .action_mainmenu
     cmp al, 'Q'
     je .action_mainmenu
@@ -73,10 +63,6 @@ showPauseScreen:
     mov byte [game_state], STATE_MENU   
     call showBackground320x200
     jmp game_loop
-
-; ============================================================
-; EXISTING DRAW ROUTINES (UNCHANGED)
-; ============================================================
 
 drawPausePanel:
     push ax
@@ -140,7 +126,6 @@ drawPauseMenu:
     mov si, [dark_brown]
     call drawRoundedRect
 
-    ; --- RESUME TEXT ---
     mov ax, PAUSE_MENU_BUTTON_X
     add ax, PAUSE_MENU_BUTTON_WIDTH / 8
     mov cx, ax
@@ -155,7 +140,6 @@ drawPauseMenu:
 
     call updatePadd
 
-    ; --- RESTART BUTTON ---
     mov ax, PAUSE_MENU_BUTTON_X
     mov bx, PAUSE_MENU_BUTTON_Y
     add bx, [DIST]
@@ -177,7 +161,6 @@ drawPauseMenu:
 
     call updatePadd
 
-    ; --- QUIT BUTTON ---
     mov ax, PAUSE_MENU_BUTTON_X
     mov bx, PAUSE_MENU_BUTTON_Y
     add bx, [DIST]

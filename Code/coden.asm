@@ -1,6 +1,3 @@
-; ============================================================
-; mainRunner.asm — Entrypoint for VGA 320x200 mode
-; ============================================================
 [BITS 16]
 [ORG 0x100]
 
@@ -12,6 +9,7 @@ jmp start
 %include "Code\constants.asm"
 %include "Code\timer.asm"
 %include "Code\sound.asm"
+%include "Code\sound2.asm"
 %include "Code\show_bg.asm"
 %include "Code\navigation.asm"
 %include "Code\main_menu.asm"
@@ -21,19 +19,14 @@ jmp start
 %include "Code\balloon_system.asm"
 %include "Code\balloon.asm"
 
-; ============================================================
-; PROGRAM ENTRY
-; ============================================================
 start:
-    mov ax, 0x0013        ; Set VGA 320x200x256
+    mov ax, 0x0013
     int 0x10
 
     mov byte [game_state], STATE_MENU
     call showBackground320x200
+    call playMelody
 
-; ============================================================
-; MAIN GAME LOOP
-; ============================================================
 game_loop:
     mov al, [game_state]
     cmp al, STATE_MENU
@@ -50,9 +43,6 @@ game_loop:
     je exit_program
     jmp game_loop
 
-; ============================================================
-; MENU STATE
-; ============================================================
 state_menu:
     call drawMainMenu
     call handleMainMenuInput
@@ -61,9 +51,6 @@ state_menu:
     call executeMenuChoice
     jmp game_loop
 
-; ============================================================
-; GAME STATE
-; ============================================================
 state_game:
     mov al, [timer_active]
     cmp al, 1
@@ -71,6 +58,7 @@ state_game:
     call installTimerISR
     call resetTimer
     mov byte [timer_active], 1
+    mov word [current_score], 0
     call showMainGameScreen
     call initBalloonSystem
 
@@ -79,28 +67,30 @@ game_loop_draw:
     cmp al, 1
     je game_time_up
 
-    call drawScorePanel
-    call drawTimerPanel
     call updateBalloons
     call renderBalloons
+    call drawScorePanel
+    call drawTimerPanel
 
     mov ah, 01h
     int 16h
     jz game_tick_end
 
     mov ah, 00h
-    int 16h                ; AL = ASCII, AH = scan
+    int 16h
 
     cmp al, 'a'
     jb check_uppercase
     cmp al, 'z'
     ja check_uppercase
     sub al, 32
+
 check_uppercase:
     cmp al, 'A'
     jb check_esc
     cmp al, 'Z'
     ja check_esc
+    
     call checkBalloonHit
     cmp al, 1
     je game_tick_end
@@ -128,16 +118,10 @@ game_time_up:
     call showBackground320x200
     jmp game_loop
 
-; ============================================================
-; PAUSE STATE
-; ============================================================
 state_pause:
-    call showPauseScreen       ; All input/draw handled internally
+    call showPauseScreen
     jmp game_loop
 
-; ============================================================
-; GAME OVER STATE
-; ============================================================
 state_gameover:
     call showGameOverScreen
     mov ah, 00h
@@ -167,17 +151,11 @@ quit_to_menu:
     mov byte [game_state], STATE_MENU
     jmp game_loop
 
-; ============================================================
-; HELP STATE
-; ============================================================
 state_help:
     call showHelpScreen
     mov byte [game_state], STATE_MENU
     jmp game_loop
 
-; ============================================================
-; EXIT PROGRAM
-; ============================================================
 exit_program:
     cmp byte [timer_active], 1
     jne skip_restore

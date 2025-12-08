@@ -55,6 +55,12 @@ handleMainMenuInput:
 
 .input_loop:
     call drawMenuArrow
+    call animateTitleStar
+    call wait_vsync
+
+    mov ah, 0x01
+    int 0x16
+    jz .input_loop
 
     mov ah, 0x00
     int 0x16

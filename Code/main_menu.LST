@@ -1,179 +1,275 @@
-     1                                  ; ======================================================================
-     2                                  ; drawMainMenu
-     3                                  ; Draws the main menu with title, Play button, and Exit button.
-     4                                  ; ======================================================================
-     5                                  
-     6                                  drawMainMenu:
-     7 00000000 50                          push ax
-     8 00000001 53                          push bx
-     9 00000002 51                          push cx
-    10 00000003 52                          push dx
-    11 00000004 56                          push si
-    12 00000005 57                          push di
-    13                                  
-    14                                      ; ------------------------------------------------------------
-    15                                      ; TITLE
-    16                                      ; ------------------------------------------------------------
-    17 00000006 B93200                      mov  cx, 50
-    18 00000009 BA1E00                      mov  dx, 30
-    19                                      mov  si, title_text              ; DS:SI -> title string
-    19          ******************       error: symbol `title_text' not defined
-    20                                      mov  bl, [nature_dark_green]     ; color
-    20          ******************       error: symbol `nature_dark_green' not defined
-    21 0000000C B702                        mov  bh, 2                       ; scale
-    22                                      call drawText
-    22          ******************       error: symbol `drawText' not defined
-    23                                  
-    24                                      ; ------------------------------------------------------------
-    25                                      ; PLAY BUTTON
-    26                                      ; ------------------------------------------------------------
-    27                                      mov  ax, MENU_BUTTON_X - 7
-    27          ******************       error: symbol `MENU_BUTTON_X' not defined
-    28                                      mov  bx, MENU_BUTTON_Y - 2
-    28          ******************       error: symbol `MENU_BUTTON_Y' not defined
-    29                                      mov  cx, MENU_BUTTON_WIDTH + 15
-    29          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
-    30                                      mov  dx, MENU_BUTTON_HEIGHT + 4
-    30          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-    31                                      mov  si, [dark_orange]                 ; outer color
-    31          ******************       error: symbol `dark_orange' not defined
-    32                                      mov  di, [dark_brown]     ; fill color
-    32          ******************       error: symbol `dark_brown' not defined
-    33                                      call drawRoundedRect
-    33          ******************       error: symbol `drawRoundedRect' not defined
-    34                                  
-    35                                      ; --- PLAY TEXT ---
-    36                                      mov  ax, MENU_BUTTON_X
-    36          ******************       error: symbol `MENU_BUTTON_X' not defined
-    37                                      add  ax, MENU_BUTTON_WIDTH / 8
-    37          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
-    38 0000000E 89C1                        mov  cx, ax
-    39                                  
-    40                                      mov  ax, MENU_BUTTON_Y
-    40          ******************       error: symbol `MENU_BUTTON_Y' not defined
-    41                                      add  ax, MENU_BUTTON_HEIGHT / 4
-    41          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-    42 00000010 89C2                        mov  dx, ax
-    43                                  
-    44                                      mov  si, menu_play
-    44          ******************       error: symbol `menu_play' not defined
-    45                                      mov  bl, [dark_brown]
-    45          ******************       error: symbol `dark_brown' not defined
-    46 00000012 B702                        mov  bh, 2
-    47                                      call drawText
-    47          ******************       error: symbol `drawText' not defined
+     1                                  drawMainMenu:
+     2 00000000 50                          push ax
+     3 00000001 53                          push bx
+     4 00000002 51                          push cx
+     5 00000003 52                          push dx
+     6 00000004 56                          push si
+     7 00000005 57                          push di
+     8                                  
+     9 00000006 C706[E701]0000              mov word[DIT], 0
+    10                                  
+    11 0000000C B82800                      mov ax, 40
+    12 0000000F BB1400                      mov bx, 20
+    13 00000012 B9EB00                      mov cx, 235
+    14 00000015 BA2300                      mov dx, 35
+    15                                      mov si, [dark_orange]
+    15          ******************       error: symbol `dark_orange' not defined
+    16                                      mov di, [light_orange]
+    16          ******************       error: symbol `light_orange' not defined
+    17                                      call drawRoundedRect
+    17          ******************       error: symbol `drawRoundedRect' not defined
+    18                                  
+    19 00000018 8B0E[E901]                  mov cx, [star_x]
+    20 0000001C 8B16[EB01]                  mov dx, [star_y]
+    21 00000020 B02A                        mov al, '*'
+    22                                      mov bl, [bright_yellow]
+    22          ******************       error: symbol `bright_yellow' not defined
+    23 00000022 B701                        mov bh, 1
+    24 00000024 E8A401                      call drawSingleChar
+    25                                  
+    26 00000027 B93200                      mov cx, 50
+    27 0000002A BA1E00                      mov dx, 30
+    28                                      mov si, title_text
+    28          ******************       error: symbol `title_text' not defined
+    29                                      mov bl, [nature_dark_green]
+    29          ******************       error: symbol `nature_dark_green' not defined
+    30 0000002D B702                        mov bh, 2
+    31                                      call drawText
+    31          ******************       error: symbol `drawText' not defined
+    32                                  
+    33                                      mov ax, MENU_BUTTON_X - 7
+    33          ******************       error: symbol `MENU_BUTTON_X' not defined
+    34                                      mov bx, MENU_BUTTON_Y - 2
+    34          ******************       error: symbol `MENU_BUTTON_Y' not defined
+    35                                      mov cx, MENU_BUTTON_WIDTH + 15
+    35          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
+    36                                      mov dx, MENU_BUTTON_HEIGHT + 4
+    36          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+    37                                      mov si, [dark_orange]
+    37          ******************       error: symbol `dark_orange' not defined
+    38                                      mov di, [dark_brown]
+    38          ******************       error: symbol `dark_brown' not defined
+    39                                      call drawRoundedRect
+    39          ******************       error: symbol `drawRoundedRect' not defined
+    40                                  
+    41                                      mov ax, MENU_BUTTON_X
+    41          ******************       error: symbol `MENU_BUTTON_X' not defined
+    42                                      add ax, MENU_BUTTON_WIDTH / 8
+    42          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
+    43 0000002F 89C1                        mov cx, ax
+    44                                  
+    45                                      mov ax, MENU_BUTTON_Y
+    45          ******************       error: symbol `MENU_BUTTON_Y' not defined
+    46                                      add ax, MENU_BUTTON_HEIGHT / 4
+    46          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+    47 00000031 89C2                        mov dx, ax
     48                                  
-    49 00000014 E8B700                      call updatePadding
-    50                                  
-    51                                      ; ------------------------------------------------------------
-    52                                      ; HELP BUTTON
-    53                                      ; ------------------------------------------------------------
-    54                                      mov  ax, MENU_BUTTON_X - 7
-    54          ******************       error: symbol `MENU_BUTTON_X' not defined
-    55                                      mov  bx, MENU_BUTTON_Y - 2
-    55          ******************       error: symbol `MENU_BUTTON_Y' not defined
-    56                                      add  bx, [DISP]
-    56          ******************       error: symbol `DISP' not defined
-    57                                      mov  cx, MENU_BUTTON_WIDTH + 15
-    57          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
-    58                                      mov  dx, MENU_BUTTON_HEIGHT + 4
-    58          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-    59                                      mov  si, [dark_orange]
-    59          ******************       error: symbol `dark_orange' not defined
-    60                                      mov  di, [dark_brown]
-    60          ******************       error: symbol `dark_brown' not defined
-    61                                      call drawRoundedRect
-    61          ******************       error: symbol `drawRoundedRect' not defined
-    62                                  
-    63                                      ; --- HELP TEXT ---
-    64                                      mov  ax, MENU_BUTTON_X
-    64          ******************       error: symbol `MENU_BUTTON_X' not defined
-    65                                      add  ax, MENU_BUTTON_WIDTH / 8
-    65          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
-    66 00000017 89C1                        mov  cx, ax
-    67                                  
-    68                                      mov  ax, MENU_BUTTON_Y
-    68          ******************       error: symbol `MENU_BUTTON_Y' not defined
-    69                                      add  ax, MENU_BUTTON_HEIGHT / 4
-    69          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-    70                                      add  ax, [DISP]
-    70          ******************       error: symbol `DISP' not defined
-    71 00000019 89C2                        mov  dx, ax
-    72                                  
-    73                                      mov  si, menu_help
-    73          ******************       error: symbol `menu_help' not defined
-    74                                      mov  bl, [dark_brown]
-    74          ******************       error: symbol `dark_brown' not defined
-    75 0000001B B702                        mov  bh, 2
-    76                                      call drawText
-    76          ******************       error: symbol `drawText' not defined
-    77                                  
-    78 0000001D E8AE00                      call updatePadding
-    79                                  
-    80                                      ; ------------------------------------------------------------
-    81                                      ; EXIT BUTTON
-    82                                      ; ------------------------------------------------------------
-    83                                      mov  ax, MENU_BUTTON_X - 7
-    83          ******************       error: symbol `MENU_BUTTON_X' not defined
-    84                                      mov  bx, MENU_BUTTON_Y - 2
-    84          ******************       error: symbol `MENU_BUTTON_Y' not defined
-    85                                      add  bx, [DISP]
-    85          ******************       error: symbol `DISP' not defined
-    86                                      mov  cx, MENU_BUTTON_WIDTH + 15
-    86          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
-    87                                      mov  dx, MENU_BUTTON_HEIGHT + 4
-    87          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-    88                                      mov  si, [dark_orange]
-    88          ******************       error: symbol `dark_orange' not defined
-    89                                      mov  di, [dark_brown]
-    89          ******************       error: symbol `dark_brown' not defined
-    90                                      call drawRoundedRect
-    90          ******************       error: symbol `drawRoundedRect' not defined
-    91                                  
-    92                                      ; --- EXIT TEXT ---
-    93                                      mov  ax, MENU_BUTTON_X
-    93          ******************       error: symbol `MENU_BUTTON_X' not defined
-    94                                      add  ax, MENU_BUTTON_WIDTH / 8
-    94          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
-    95 00000020 89C1                        mov  cx, ax
-    96                                  
-    97                                      mov  ax, MENU_BUTTON_Y
-    97          ******************       error: symbol `MENU_BUTTON_Y' not defined
-    98                                      add  ax, MENU_BUTTON_HEIGHT / 4
-    98          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-    99                                      add  ax, [DISP]
-    99          ******************       error: symbol `DISP' not defined
-   100 00000022 89C2                        mov  dx, ax
-   101                                  
-   102                                      mov  si, menu_exit
-   102          ******************       error: symbol `menu_exit' not defined
-   103                                      mov  bl, [dark_brown]
-   103          ******************       error: symbol `dark_brown' not defined
-   104 00000024 B702                        mov  bh, 2
-   105                                      call drawText
-   105          ******************       error: symbol `drawText' not defined
-   106                                  
-   107                                      ; ------------------------------------------------------------
-   108                                      ; CLEANUP
-   109                                      ; ------------------------------------------------------------
-   110 00000026 5F                          pop  di
-   111 00000027 5E                          pop  si
-   112 00000028 5A                          pop  dx
-   113 00000029 59                          pop  cx
-   114 0000002A 5B                          pop  bx
-   115 0000002B 58                          pop  ax
-   116 0000002C C3                          ret
-   117                                  
-   118                                  ; ------------------------------------------------------------
-   119                                  ; UPDATE PADDING
-   120                                  ; ------------------------------------------------------------
-   121                                  updatePadding:
-   122                                      mov  ax, [DISP]
-   122          ******************       error: symbol `DISP' not defined
-   123                                      add  ax, MENU_BUTTON_HEIGHT
-   123          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-   124                                      add  ax, MENU_BUTTON_HEIGHT / 2
-   124          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
-   125                                      mov  [DISP], ax
-   125          ******************       error: symbol `DISP' not defined
-   126 0000002D C3                          ret
+    49                                      mov si, menu_play
+    49          ******************       error: symbol `menu_play' not defined
+    50                                      mov bl, [dark_brown]
+    50          ******************       error: symbol `dark_brown' not defined
+    51 00000033 B702                        mov bh, 2
+    52                                      call drawText
+    52          ******************       error: symbol `drawText' not defined
+    53                                  
+    54 00000035 E8C600                      call updatePadding
+    55                                  
+    56                                      mov ax, MENU_BUTTON_X - 7
+    56          ******************       error: symbol `MENU_BUTTON_X' not defined
+    57                                      mov bx, MENU_BUTTON_Y - 2
+    57          ******************       error: symbol `MENU_BUTTON_Y' not defined
+    58 00000038 031E[E701]                  add bx, [DIT]
+    59                                      mov cx, MENU_BUTTON_WIDTH + 15
+    59          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
+    60                                      mov dx, MENU_BUTTON_HEIGHT + 4
+    60          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+    61                                      mov si, [dark_orange]
+    61          ******************       error: symbol `dark_orange' not defined
+    62                                      mov di, [dark_brown]
+    62          ******************       error: symbol `dark_brown' not defined
+    63                                      call drawRoundedRect
+    63          ******************       error: symbol `drawRoundedRect' not defined
+    64                                  
+    65                                      mov ax, MENU_BUTTON_X
+    65          ******************       error: symbol `MENU_BUTTON_X' not defined
+    66                                      add ax, MENU_BUTTON_WIDTH / 8
+    66          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
+    67 0000003C 89C1                        mov cx, ax
+    68                                  
+    69                                      mov ax, MENU_BUTTON_Y
+    69          ******************       error: symbol `MENU_BUTTON_Y' not defined
+    70                                      add ax, MENU_BUTTON_HEIGHT / 4
+    70          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+    71 0000003E 0306[E701]                  add ax, [DIT]
+    72 00000042 89C2                        mov dx, ax
+    73                                  
+    74                                      mov si, menu_help
+    74          ******************       error: symbol `menu_help' not defined
+    75                                      mov bl, [dark_brown]
+    75          ******************       error: symbol `dark_brown' not defined
+    76 00000044 B702                        mov bh, 2
+    77                                      call drawText
+    77          ******************       error: symbol `drawText' not defined
+    78                                  
+    79 00000046 E8B500                      call updatePadding
+    80                                  
+    81                                      mov ax, MENU_BUTTON_X - 7
+    81          ******************       error: symbol `MENU_BUTTON_X' not defined
+    82                                      mov bx, MENU_BUTTON_Y - 2
+    82          ******************       error: symbol `MENU_BUTTON_Y' not defined
+    83 00000049 031E[E701]                  add bx, [DIT]
+    84                                      mov cx, MENU_BUTTON_WIDTH + 15
+    84          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
+    85                                      mov dx, MENU_BUTTON_HEIGHT + 4
+    85          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+    86                                      mov si, [dark_orange]
+    86          ******************       error: symbol `dark_orange' not defined
+    87                                      mov di, [dark_brown]
+    87          ******************       error: symbol `dark_brown' not defined
+    88                                      call drawRoundedRect
+    88          ******************       error: symbol `drawRoundedRect' not defined
+    89                                  
+    90                                      mov ax, MENU_BUTTON_X
+    90          ******************       error: symbol `MENU_BUTTON_X' not defined
+    91                                      add ax, MENU_BUTTON_WIDTH / 8
+    91          ******************       error: symbol `MENU_BUTTON_WIDTH' not defined
+    92 0000004D 89C1                        mov cx, ax
+    93                                  
+    94                                      mov ax, MENU_BUTTON_Y
+    94          ******************       error: symbol `MENU_BUTTON_Y' not defined
+    95                                      add ax, MENU_BUTTON_HEIGHT / 4
+    95          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+    96 0000004F 0306[E701]                  add ax, [DIT]
+    97 00000053 89C2                        mov dx, ax
+    98                                  
+    99                                      mov si, menu_exit
+    99          ******************       error: symbol `menu_exit' not defined
+   100                                      mov bl, [dark_brown]
+   100          ******************       error: symbol `dark_brown' not defined
+   101 00000055 B702                        mov bh, 2
+   102                                      call drawText
+   102          ******************       error: symbol `drawText' not defined
+   103                                  
+   104 00000057 5F                          pop di
+   105 00000058 5E                          pop si
+   106 00000059 5A                          pop dx
+   107 0000005A 59                          pop cx
+   108 0000005B 5B                          pop bx
+   109 0000005C 58                          pop ax
+   110 0000005D C3                          ret
+   111                                  
+   112                                  updatePadding:
+   113 0000005E A1[E701]                    mov ax, [DIT]
+   114                                      add ax, MENU_BUTTON_HEIGHT
+   114          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+   115                                      add ax, MENU_BUTTON_HEIGHT / 2
+   115          ******************       error: symbol `MENU_BUTTON_HEIGHT' not defined
+   116 00000061 A3[E701]                    mov [DIT], ax
+   117 00000064 C3                          ret
+   118                                  
+   119                                  animateTitleStar:
+   120 00000065 50                          push ax
+   121 00000066 53                          push bx
+   122 00000067 51                          push cx
+   123 00000068 52                          push dx
+   124 00000069 56                          push si
+   125                                  
+   126 0000006A FE06[EE01]                  inc byte [star_delay]
+   127 0000006E 803E[EE01]02                cmp byte [star_delay], 2
+   128 00000073 0F8C4E01                    jl .skip_move
+   129 00000077 C606[EE01]00                mov byte [star_delay], 0
+   130                                  
+   131 0000007C 8B0E[E901]                  mov cx, [star_x]
+   132 00000080 8B16[EB01]                  mov dx, [star_y]
+   133 00000084 B02A                        mov al, '*'
+   134                                      mov bl, [light_orange] 
+   134          ******************       error: symbol `light_orange' not defined
+   135 00000086 B701                        mov bh, 1
+   136 00000088 E84001                      call drawSingleChar
+   137                                  
+   138 0000008B 803E[ED01]00                cmp byte [star_dir], 0
+   139 00000090 0F84B800                    je .move_right
+   140 00000094 803E[ED01]01                cmp byte [star_dir], 1
+   141 00000099 0F84C900                    je .move_down
+   142 0000009D 803E[ED01]02                cmp byte [star_dir], 2
+   143 000000A2 0F84DA00                    je .move_left
+   144 000000A6 E9F100                      jmp .move_up
+   145                                  
+   146                                  .move_right:
+   147 000000A9 8306[E901]04                add word [star_x], 4
+   148 000000AE A1[E901]                    mov ax, [star_x]
+   149 000000B1 3D0E01                      cmp ax, 270
+   150 000000B4 0F8EFA00                    jle .draw_new
+   151 000000B8 C706[E901]0E01              mov word [star_x], 270
+   152 000000BE C606[ED01]01                mov byte [star_dir], 1
+   153 000000C3 E9EC00                      jmp .draw_new
+   154                                  
+   155                                  .move_down:
+   156 000000C6 8306[EB01]04                add word [star_y], 4
+   157 000000CB A1[EB01]                    mov ax, [star_y]
+   158 000000CE 83F832                      cmp ax, 50
+   159 000000D1 0F8EDD00                    jle .draw_new
+   160 000000D5 C706[EB01]3200              mov word [star_y], 50
+   161 000000DB C606[ED01]02                mov byte [star_dir], 2
+   162 000000E0 E9CF00                      jmp .draw_new
+   163                                  
+   164                                  .move_left:
+   165 000000E3 832E[E901]04                sub word [star_x], 4
+   166 000000E8 A1[E901]                    mov ax, [star_x]
+   167 000000EB 83F828                      cmp ax, 40
+   168 000000EE 0F8DC000                    jge .draw_new
+   169 000000F2 C706[E901]2800              mov word [star_x], 40
+   170 000000F8 C606[ED01]03                mov byte [star_dir], 3
+   171 000000FD E9B200                      jmp .draw_new
+   172                                  
+   173                                  .move_up:
+   174 00000100 832E[EB01]04                sub word [star_y], 4
+   175 00000105 A1[EB01]                    mov ax, [star_y]
+   176 00000108 83F814                      cmp ax, 20
+   177 0000010B 0F8DA300                    jge .draw_new
+   178 0000010F C706[EB01]1400              mov word [star_y], 20
+   179 00000115 C606[ED01]00                mov byte [star_dir], 0
+   180                                  
+   181                                  .draw_new:
+   182 0000011A 8B0E[E901]                  mov cx, [star_x]
+   183 0000011E 8B16[EB01]                  mov dx, [star_y]
+   184 00000122 B02A                        mov al, '*'
+   185                                      mov bl, [bright_yellow]
+   185          ******************       error: symbol `bright_yellow' not defined
+   186 00000124 B701                        mov bh, 1
+   187 00000126 E8A200                      call drawSingleChar
+   188                                  
+   189                                  .skip_move:
+   190 00000129 5E                          pop si
+   191 0000012A 5A                          pop dx
+   192 0000012B 59                          pop cx
+   193 0000012C 5B                          pop bx
+   194 0000012D 58                          pop ax
+   195 0000012E C3                          ret
+   196                                  
+   197                                  drawSingleChar:
+   198 0000012F 50                          push ax
+   199 00000130 56                          push si
+   200 00000131 57                          push di
+   201 00000132 55                          push bp
+   202                                      
+   203 00000133 83EC02                      sub sp, 2
+   204 00000136 89E7                        mov di, sp
+   205 00000138 8805                        mov [di], al
+   206 0000013A C6450100                    mov byte [di+1], 0
+   207 0000013E 89FE                        mov si, di
+   208                                      call drawText
+   208          ******************       error: symbol `drawText' not defined
+   209 00000140 83C402                      add sp, 2
+   210                                  
+   211 00000143 5D                          pop bp
+   212 00000144 5F                          pop di
+   213 00000145 5E                          pop si
+   214 00000146 58                          pop ax
+   215 00000147 C3                          ret
+   216                                  
+   217 00000148 0000                    DIT: dw 0
+   218 0000014A 2800                    star_x: dw 40
+   219 0000014C 1400                    star_y: dw 20
+   220 0000014E 00                      star_dir: db 0
+   221 0000014F 00                      star_delay: db 0

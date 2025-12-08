@@ -59,8 +59,8 @@ DIST : dw 0
 %define GAMEOVER_MENU_BUTTON_Y         PAUSE_PANEL_Y + PAUSE_PANEL_HEIGHT / 4
 
 gameover_title      db "GAMEOVER", 0
-stats_score_label   db "SCORE: 120", 0
-stats_time_label    db "TIME:12:33", 0
+stats_score_label   db "SCORE:80", 0
+stats_time_label    db "TIME:", 0
 stats_balloons_label db "BALLOONS:", 0
 menu_retry          db " RETRY(R)", 0
 menu_quit           db "  QUIT(Q)", 0

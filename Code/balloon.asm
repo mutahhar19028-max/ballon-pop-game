@@ -90,7 +90,7 @@ drawBalloon:
     mov cx, [bp-2]
     add cx, 9
     mov dx, [bp-4]
-    add dx, 3
+    add dx, 5
     mov bh, 1
     mov bl, [dark_brown]
 
